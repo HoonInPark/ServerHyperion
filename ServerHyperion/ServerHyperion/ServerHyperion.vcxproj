@@ -129,6 +129,11 @@
   <ItemGroup>
     <ClCompile Include="ServerHyperion.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ClientInfo.h" />
+    <ClInclude Include="Define.h" />
+    <ClInclude Include="IOCPServer.h" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
