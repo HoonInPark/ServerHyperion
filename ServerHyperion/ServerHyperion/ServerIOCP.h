@@ -51,13 +51,15 @@ public:
 	{
 		SOCKADDR_IN		stServerAddr;
 		stServerAddr.sin_family = AF_INET;
-		stServerAddr.sin_port = htons(nBindPort); //서버 포트를 설정한다.		
-		//어떤 주소에서 들어오는 접속이라도 받아들이겠다.
-		//보통 서버라면 이렇게 설정한다. 만약 한 아이피에서만 접속을 받고 싶다면
-		//그 주소를 inet_addr함수를 이용해 넣으면 된다.
+		stServerAddr.sin_port = htons(nBindPort); //서버 포트를 설정한다.
+
+		// 어떤 주소에서 들어오는 접속이라도 받아들이겠다.
+		// (보통 서버라면 이렇게 설정한다. 만약 한 아이피에서만 접속을 받고 싶다면
+		// 그 주소를 inet_addr함수를 이용해 넣으면 된다.)
 		stServerAddr.sin_addr.s_addr = htonl(INADDR_ANY);
 
-		//위에서 지정한 서버 주소 정보와 cIOCompletionPort 소켓을 연결한다.
+		// 위에서 지정한 서버 주소 정보와 cIOCompletionPort 소켓을 연결한다. 
+		// cIOCompletionPort는 서버의 주소정보를 가지고 있는 소켓이다.
 		int nRet = bind(mListenSocket, (SOCKADDR*)&stServerAddr, sizeof(SOCKADDR_IN));
 		if (0 != nRet)
 		{
@@ -66,7 +68,7 @@ public:
 		}
 
 		//접속 요청을 받아들이기 위해 cIOCompletionPort소켓을 등록하고 
-		//접속대기큐를 5개로 설정 한다.
+		//접속대기큐를 5개로 설정 한다. -> 5개 이상의 접속 요청이 들어오면 대기큐에 쌓인다.
 		nRet = listen(mListenSocket, 5);
 		if (0 != nRet)
 		{
@@ -325,13 +327,13 @@ private:
 
 
 
-	UINT32 MaxIOWorkerThreadCount = 0;
+	UINT32 MaxIOWorkerThreadCount{ 0 };
 
 	//클라이언트 정보 저장 구조체
 	std::vector<stClientInfo*> mClientInfos;
 
 	//클라이언트의 접속을 받기위한 리슨 소켓
-	SOCKET		mListenSocket = INVALID_SOCKET;
+	SOCKET		mListenSocket{ INVALID_SOCKET };
 
 	//접속 되어있는 클라이언트 수
 	int			mClientCnt = 0;
@@ -343,11 +345,11 @@ private:
 	std::thread	mAccepterThread;
 
 	//CompletionPort객체 핸들
-	HANDLE		mIOCPHandle = INVALID_HANDLE_VALUE;
+	HANDLE		mIOCPHandle{ INVALID_HANDLE_VALUE };
 
 	//작업 쓰레드 동작 플래그
-	bool		mIsWorkerRun = true;
+	bool		mIsWorkerRun{ true };
 
 	//접속 쓰레드 동작 플래그
-	bool		mIsAccepterRun = true;
+	bool		mIsAccepterRun{ true };
 };
