@@ -18,6 +18,9 @@
     <ClCompile Include="main.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="GlobalBase.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ServerIOCP.h">
@@ -32,7 +35,7 @@
     <ClInclude Include="ServerHyperion.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="Packet.h">
+    <ClInclude Include="GlobalBase.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>

@@ -127,6 +127,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="GlobalBase.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -134,7 +135,7 @@
     <ClInclude Include="Define.h" />
     <ClInclude Include="ServerHyperion.h" />
     <ClInclude Include="ServerIOCP.h" />
-    <ClInclude Include="Packet.h" />
+    <ClInclude Include="GlobalBase.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

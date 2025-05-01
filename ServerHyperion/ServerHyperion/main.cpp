@@ -14,7 +14,8 @@ int main()
 {
 	ServerHyperion server;
 
-	server.Init(thread::hardware_concurrency());
+	// 적절한 작업 스레드의 갯수는 (CPU * 2) + 1
+	server.Init(thread::hardware_concurrency() * 2 + 1);
 	server.BindandListen(SERVER_PORT);
 
 	server.Run(MAX_CLIENT);

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ServerIOCP.h"
-#include "Packet.h"
+#include "GlobalBase.h"
 
 #include <vector>
 #include <deque>
@@ -15,7 +15,6 @@ class ServerHyperion : public IOCPServer
 public:
 	ServerHyperion() = default;
 	virtual ~ServerHyperion() = default;
-
 
 	virtual void OnConnect(const UINT32 clientIndex_) override
 	{
@@ -41,7 +40,7 @@ public:
 	void Run(const UINT32 maxClient)
 	{
 		mIsRunProcessThread = true;
-		mProcessThread = thread(
+		mProcessThread = thread( // lambda bind here use onlu a thread
 			[this]()
 			{
 				ProcessPacket();
@@ -71,11 +70,11 @@ private:
 			auto packetData = DequePacketData();
 			if (packetData.DataSize != 0)
 			{
-				SendMsg(packetData.SessionIndex, packetData.DataSize, packetData.pPacketData);
+				//SendMsg(packetData.SessionIndex, packetData.DataSize, packetData.pPacketData); // code made for echo server, unused for hyperion prj
 			}
 			else
 			{
-				this_thread::sleep_for(chrono::milliseconds(1));
+				//this_thread::sleep_for(chrono::milliseconds(1)); // made it wait, not sleeping for arbitrary time
 			}
 		}
 	}
@@ -104,4 +103,5 @@ private:
 
 	mutex mLock;
 	deque<PacketData> mPacketDataQueue;
+	//deque <shared_ptr< PacketData >> mPacketDataQueue;
 };
