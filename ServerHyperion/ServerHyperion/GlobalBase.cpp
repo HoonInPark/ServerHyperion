@@ -1,11 +1,177 @@
 #include "GlobalBase.h"
 
-bool PacketData::Compress(const Data& _InData)
+PacketData::PacketData()
+	: m_Header(static_cast<int>(Header::MAX), false)
 {
-	return false;
+	size_t DataSize = 0;
+
+	DataSize += m_Header.size(); // Header size
+	for (int i = 0; i < static_cast<int>(Header::MAX); ++i)
+		DataSize += GetSize(static_cast<Header>(i)); // add size of each value
+#ifdef SENDER
+	m_pBinData = new char[DataSize];
+#endif // SENDER
 }
 
-bool PacketData::Decompress(const void* _pInStartPt, const size_t _InSize)
+#ifdef SENDER
+size_t PacketData::Compress(char* _pOutStartPt)
 {
+	_pOutStartPt = m_pBinData;
+
+	size_t WriteIdx = 0;
+
+	// write header
+	bool bHeader = false;
+	for (int i = 0; i < static_cast<size_t>(Header::MAX); ++i)
+	{
+		bHeader = m_Header[i];
+		CopyMemory(_pOutStartPt + WriteIdx, &bHeader, sizeof(char));
+		WriteIdx++;
+	}
+
+	// write value
+	for (int i = 0; i < static_cast<int>(Header::MAX); ++i)
+	{
+		if (!m_Header[i]) continue;
+
+		switch (static_cast<Header>(i))
+		{
+		case Header::SESSION_IDX:
+		{
+			CopyMemory(_pOutStartPt + WriteIdx, &m_SessionIdx, sizeof(UINT32));
+			WriteIdx += sizeof(UINT32);
+			break;
+		}
+
+		case Header::POS_X:
+		{
+			CopyMemory(_pOutStartPt + WriteIdx, &m_PosX, sizeof(double));
+			WriteIdx += sizeof(double);
+			break;
+		}
+		case Header::POS_Y:
+		{
+			CopyMemory(_pOutStartPt + WriteIdx, &m_PosY, sizeof(double));
+			WriteIdx += sizeof(double);
+			break;
+		}
+		case Header::POS_Z:
+		{
+			CopyMemory(_pOutStartPt + WriteIdx, &m_PosZ, sizeof(double));
+			WriteIdx += sizeof(double);
+			break;
+		}
+
+		case Header::ROT_X:
+		{
+			CopyMemory(_pOutStartPt + WriteIdx, &m_RotX, sizeof(double));
+			WriteIdx += sizeof(double);
+			break;
+		}
+		case Header::ROT_Y:
+		{
+			CopyMemory(_pOutStartPt + WriteIdx, &m_RotY, sizeof(double));
+			WriteIdx += sizeof(double);
+			break;
+		}
+		case Header::ROT_Z:
+		{
+			CopyMemory(_pOutStartPt + WriteIdx, &m_RotZ, sizeof(double));
+			WriteIdx += sizeof(double);
+			break;
+		}
+
+		case Header::IS_JUMPING:
+		{
+			CopyMemory(_pOutStartPt + WriteIdx, &m_IsJumping, sizeof(bool));
+			WriteIdx += sizeof(bool);
+			break;
+		}
+
+		default:
+			break;
+		}
+	}
+
+	fill(m_Header.begin(), m_Header.end(), false);
+	return WriteIdx;
+}
+#endif // SENDER
+
+#ifdef RECEIVER
+bool PacketData::Decompress(char* _pInStartPt, const size_t _InSize)
+{
+	m_pBinData = _pInStartPt;
+
+	for (int i = 0; i < static_cast<int>(Header::MAX); ++i)
+	{
+		m_Header[i] = (bool)_pInStartPt[i];
+	}
+
+	size_t ReadIdx = static_cast<size_t>(Header::MAX);
+	for (int i = 0; i < static_cast<int>(Header::MAX); ++i)
+	{
+		if (!m_Header[i]) continue;
+
+		switch (static_cast<Header>(i))
+		{
+		case Header::SESSION_IDX:
+		{
+			CopyMemory(&m_SessionIdx, _pInStartPt + ReadIdx, sizeof(UINT32));
+			ReadIdx += sizeof(UINT32);
+			break;
+		}
+
+		case Header::POS_X:
+		{
+			CopyMemory(&m_PosX, _pInStartPt + ReadIdx, sizeof(double));
+			ReadIdx += sizeof(double);
+			break;
+		}
+		case Header::POS_Y:
+		{
+			CopyMemory(&m_PosY, _pInStartPt + ReadIdx, sizeof(double));
+			ReadIdx += sizeof(double);
+			break;
+		}
+		case Header::POS_Z:
+		{
+			CopyMemory(&m_PosZ, _pInStartPt + ReadIdx, sizeof(double));
+			ReadIdx += sizeof(double);
+			break;
+		}
+
+		case Header::ROT_X:
+		{
+			CopyMemory(&m_RotX, _pInStartPt + ReadIdx, sizeof(double));
+			ReadIdx += sizeof(double);
+			break;
+		}
+		case Header::ROT_Y:
+		{
+			CopyMemory(&m_RotY, _pInStartPt + ReadIdx, sizeof(double));
+			ReadIdx += sizeof(double);
+			break;
+		}
+		case Header::ROT_Z:
+		{
+			CopyMemory(&m_RotZ, _pInStartPt + ReadIdx, sizeof(double));
+			ReadIdx += sizeof(double);
+			break;
+		}
+
+		case Header::IS_JUMPING:
+		{
+			CopyMemory(&m_IsJumping, _pInStartPt + ReadIdx, sizeof(bool));
+			ReadIdx += sizeof(bool);
+			break;
+		}
+		default:
+			break;
+		}
+	}
+
+	fill(m_Header.begin(), m_Header.end(), false);
 	return false;
 }
+#endif // RECEIVER

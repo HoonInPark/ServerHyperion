@@ -70,7 +70,7 @@ private:
 			auto packetData = DequePacketData();
 			if (packetData.DataSize != 0)
 			{
-				//SendMsg(packetData.SessionIndex, packetData.DataSize, packetData.pPacketData); // code made for echo server, unused for hyperion prj
+				SendMsg(packetData.SessionIndex, packetData.DataSize, packetData.pPacketData); // code made for echo server, unused for hyperion prj
 			}
 			else
 			{
