@@ -1,4 +1,3 @@
-#include "pch.h"  // 반드시 제일 위에!
 #include "Serializer.h"
 
 Serializer::Serializer(bool _bIsSender)

@@ -1,5 +1,7 @@
 #pragma once
 
+#define CLIENTSOCK_EXPORT
+
 #ifdef CLIENTSOCK_EXPORT
 #define CLIENTSOCK_API __declspec(dllexport)
 #else
@@ -16,8 +18,6 @@ using namespace std;
 
 class CLIENTSOCK_API Serializer
 {
-public:
-
 	/*
 	* <header structure>
 	* filedname used as enum and idx : char (1 byte)
