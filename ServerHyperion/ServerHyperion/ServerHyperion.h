@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ServerIOCP.h"
-#include "GlobalBase.h"
+#include "PacketData.h"
 
 #include <vector>
 #include <deque>

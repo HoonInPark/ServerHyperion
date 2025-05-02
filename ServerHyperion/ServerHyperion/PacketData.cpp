@@ -1,6 +1,7 @@
-#include "GlobalBase.h"
+#include "PacketData.h"
 
-PacketData::PacketData()
+#ifndef TO_BE_DEPRECATED
+PacketData::PacketData(bool _bIsSender)
 	: m_Header(static_cast<int>(Header::MAX), false)
 {
 	size_t DataSize = 0;
@@ -8,12 +9,11 @@ PacketData::PacketData()
 	DataSize += m_Header.size(); // Header size
 	for (int i = 0; i < static_cast<int>(Header::MAX); ++i)
 		DataSize += GetSize(static_cast<Header>(i)); // add size of each value
-#ifdef SENDER
-	m_pBinData = new char[DataSize];
-#endif // SENDER
+	
+	if (_bIsSender)
+		m_pBinData = new char[DataSize];
 }
 
-#ifdef SENDER
 size_t PacketData::Compress(char* _pOutStartPt)
 {
 	_pOutStartPt = m_pBinData;
@@ -96,9 +96,7 @@ size_t PacketData::Compress(char* _pOutStartPt)
 	fill(m_Header.begin(), m_Header.end(), false);
 	return WriteIdx;
 }
-#endif // SENDER
 
-#ifdef RECEIVER
 bool PacketData::Decompress(char* _pInStartPt, const size_t _InSize)
 {
 	m_pBinData = _pInStartPt;
@@ -174,4 +172,4 @@ bool PacketData::Decompress(char* _pInStartPt, const size_t _InSize)
 	fill(m_Header.begin(), m_Header.end(), false);
 	return false;
 }
-#endif // RECEIVER
+#endif

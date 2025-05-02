@@ -1,21 +1,25 @@
 #pragma once
 
-#define WIN32_LEAN_AND_MEAN
-#define TO_BE_DEPRECATED 1
-#define IS_IN_RECV 1
+//#ifdef CLIENTSOCK_EXPORT
+//#define CLIENTSOCK_API __declspec(dllexport)
+//#else
+//#define CLIENTSOCK_API __declspec(dllimport)
+//#endif
 
-#define RECEIVER
-#define SENDER
+#define WIN32_LEAN_AND_MEAN
+#define TO_BE_DEPRECATED
 
 #include <windows.h>
 #include <vector>
 
 using namespace std;
 
-class PacketData
+class /*CLIENTSOCK_API*/ PacketData
 {
-#if TO_BE_DEPRECATED
+#ifdef TO_BE_DEPRECATED
 public:
+	PacketData() = default;
+
 	UINT32 SessionIndex = 0;
 	UINT32 DataSize = 0;
 	char* pPacketData = nullptr;
@@ -42,7 +46,7 @@ public:
 	{
 		delete pPacketData;
 	}
-#endif
+#else
 
 	/*
 	* <header structure>
@@ -60,7 +64,7 @@ public:
 	*/
 
 public:
-	PacketData();
+	PacketData(bool _bIsSender);
 
 	enum class Header : char
 	{
@@ -199,4 +203,5 @@ private:
 	//////////////////// bin end ////////////////////
 
 	/////////////////////// cache data end ///////////////////////
+#endif
 };
