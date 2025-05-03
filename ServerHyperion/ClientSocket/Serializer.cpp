@@ -13,7 +13,7 @@ Serializer::Serializer(bool _bIsSender)
 		m_pBinData = new char[DataSize];
 }
 
-size_t Serializer::Compress(char* _pOutStartPt)
+size_t Serializer::Write(char* _pOutStartPt)
 {
 	_pOutStartPt = m_pBinData;
 
@@ -96,7 +96,7 @@ size_t Serializer::Compress(char* _pOutStartPt)
 	return WriteIdx;
 }
 
-bool Serializer::Decompress(char* _pInStartPt, const size_t _InSize)
+bool Serializer::Read(char* _pInStartPt, const size_t _InSize)
 {
 	m_pBinData = _pInStartPt;
 

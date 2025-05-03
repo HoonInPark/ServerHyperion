@@ -118,6 +118,9 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy /Y /S /I "$(ProjectDir)*.h" "C:\Unreal\Projects\Hyperion\Plugins\ServerHyperion\Source\ThirdParty\ServerHyperionLibrary\Public\ServerHyperionLibrary"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -137,6 +140,12 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy /Y /S /I "$(ProjectDir)*.h" "C:\Unreal\Projects\Hyperion\Plugins\ServerHyperion\Source\ThirdParty\ServerHyperionLibrary\Public\ServerHyperionLibrary"
+xcopy /Y /I "$(SolutionDir)x64\Release\$(ProjectName).dll" "C:\Unreal\Projects\Hyperion\Plugins\ServerHyperion\Binaries\ThirdParty\ServerHyperionLibrary\Win64"
+xcopy /Y /I "$(SolutionDir)x64\Release\$(ProjectName).dll" "C:\Unreal\Projects\Hyperion\Plugins\ServerHyperion\Source\ThirdParty\ServerHyperionLibrary\x64\Release"
+xcopy /Y /I "$(SolutionDir)x64\Release\$(ProjectName).lib" "C:\Unreal\Projects\Hyperion\Plugins\ServerHyperion\Source\ThirdParty\ServerHyperionLibrary\x64\Release"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Serializer.h" />

@@ -108,8 +108,8 @@ public:
 	// but rather modify it so that it can happen after creation.
 
 	// called after Setting each value
-	size_t Compress(char* _pOutStartPt);
-	bool Decompress(char* _pInStartPt, const size_t _InSize);
+	size_t Write(char* _pOutStartPt);
+	bool Read(char* _pInStartPt, const size_t _InSize);
 
 	inline UINT32 GetSessionIdx() const { return m_SessionIdx; }
 	inline double GetPosX() const { return m_PosX; }
