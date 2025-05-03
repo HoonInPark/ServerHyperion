@@ -1,11 +1,11 @@
 #pragma once
 
-#define CLIENTSOCK_EXPORT
+#define SERVERHYPERION_EXPORT
 
-#ifdef CLIENTSOCK_EXPORT
-#define CLIENTSOCK_API __declspec(dllexport)
+#ifdef SERVERHYPERION_EXPORT
+#define SERVERHYPERION_API __declspec(dllexport)
 #else
-#define CLIENTSOCK_API __declspec(dllimport)
+#define SERVERHYPERION_API __declspec(dllimport)
 #endif
 
 #define WIN32_LEAN_AND_MEAN
@@ -16,7 +16,7 @@
 
 using namespace std;
 
-class CLIENTSOCK_API Serializer
+class SERVERHYPERION_API Serializer
 {
 	/*
 	* <header structure>
