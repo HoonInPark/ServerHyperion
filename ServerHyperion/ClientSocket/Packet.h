@@ -34,7 +34,47 @@ class SERVERHYPERION_API Packet
 	*/
 
 public:
-	Packet(bool _bIsSender);
+	Packet();
+	~Packet();
+
+	Packet& operator=(const Packet& Other)
+	{
+		if (this == &Other)
+			return *this;  // 자기 자신 보호
+
+		// 헤더 복사
+		m_Header = Other.m_Header;
+
+		// 값 복사
+		m_SessionIdx = Other.m_SessionIdx;
+
+		m_PosX = Other.m_PosX;
+		m_PosY = Other.m_PosY;
+		m_PosZ = Other.m_PosZ;
+
+		m_RotX = Other.m_RotX;
+		m_RotY = Other.m_RotY;
+		m_RotZ = Other.m_RotZ;
+
+		m_IsJumping = Other.m_IsJumping;
+
+		// 이진 데이터 복사
+		if (m_pBinData)
+		{
+			delete[] m_pBinData;
+			m_pBinData = nullptr;
+		}
+
+		m_BinDataSizeTmp = Other.m_BinDataSizeTmp;
+
+		if (Other.m_pBinData && Other.m_BinDataSizeTmp > 0)
+		{
+			m_pBinData = new char[m_BinDataSizeTmp];
+			memcpy(m_pBinData, Other.m_pBinData, m_BinDataSizeTmp);
+		}
+
+		return *this;
+	}
 
 	enum class Header : char
 	{
@@ -120,6 +160,8 @@ public:
 	inline double GetRotZ() const { return m_RotZ; }
 	inline bool GetIsJumping() const { return m_IsJumping; }
 
+	inline UINT32 GetSize() { return m_BinDataSizeTmp; }
+
 private:
 	inline UINT32 // return byte
 		GetSize(Header _InHeaderIdx)
@@ -169,7 +211,7 @@ private:
 
 	////////////////////// bin //////////////////////
 	char* m_pBinData;
-	size_t m_BinDataSizeTmp;
+	UINT32 m_BinDataSizeTmp;
 	//////////////////// bin end ////////////////////
 
 	/////////////////////// cache data end ///////////////////////

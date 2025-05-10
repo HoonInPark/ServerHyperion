@@ -1,6 +1,6 @@
 #include "Packet.h"
 
-Packet::Packet(bool _bIsSender)
+Packet::Packet()
 	: m_Header(static_cast<int>(Header::MAX), false)
 {
 	UINT32 DataSize = 0;
@@ -9,15 +9,19 @@ Packet::Packet(bool _bIsSender)
 	for (int i = 0; i < static_cast<int>(Header::MAX); ++i)
 		DataSize += GetSize(static_cast<Header>(i)); // add size of each value
 	
-	if (_bIsSender)
-		m_pBinData = new char[DataSize];
+	m_pBinData = new char[DataSize];
+}
+
+Packet::~Packet()
+{
+	delete[] m_pBinData;
 }
 
 UINT32 Packet::Write(char* _pOutStartPt)
 {
 	_pOutStartPt = m_pBinData; // copy m_pBinData ptr that is already alloced ptr mem
 
-	size_t WriteIdx = 0;
+	UINT32 WriteIdx = 0;
 
 	// write header
 	bool bHeader = false;

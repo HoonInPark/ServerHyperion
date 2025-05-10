@@ -29,6 +29,7 @@ public:
 
 	virtual void OnReceive(const UINT32 clientIndex_, const UINT32 size_, char* pData_) override
 	{
+		/*
 		printf("[OnReceive] 클라이언트: Index(%d), dataSize(%d)\n", clientIndex_, size_);
 
 		PacketData packet;
@@ -36,6 +37,16 @@ public:
 
 		lock_guard<mutex> guard(mLock);
 		mPacketDataQueue.push_back(packet);
+		*/
+
+		Packet Pack;
+
+		if (!Pack.Read(pData_, size_))
+			printf("Deserialize FAILED");
+		
+		lock_guard<mutex> guard(mLock);
+
+		m_PackDataQ.push_back(Pack);
 	}
 
 	void Run(const UINT32 maxClient)
@@ -69,9 +80,15 @@ private:
 		while (mIsRunProcessThread)
 		{
 			auto packetData = DequePacketData();
-			if (packetData.DataSize != 0)
+			if (packetData.GetSize() != 0)
 			{
-				printf("");
+				printf("pos x : %f, pos y : %f, pos z : %f, rot x : %f, rot y : %f, rot z : %f", 
+					packetData.GetPosX(),
+					packetData.GetPosY(),
+					packetData.GetPosZ(),
+					packetData.GetRotX(),
+					packetData.GetRotY(),
+					packetData.GetRotZ());
 
 				//SendMsg(packetData.SessionIndex, packetData.DataSize, packetData.pPacketData); // code made for echo server, unused for hyperion prj
 			}
@@ -82,8 +99,9 @@ private:
 		}
 	}
 
-	PacketData DequePacketData()
+	/*PacketData*/ Packet DequePacketData()
 	{
+		/*
 		PacketData packetData;
 
 		lock_guard<mutex> guard(mLock);
@@ -98,6 +116,22 @@ private:
 		mPacketDataQueue.pop_front();
 
 		return packetData;
+		*/
+
+		Packet* pPacketData = new Packet();
+
+		lock_guard<mutex> guard(mLock);
+		if (m_PackDataQ.empty())
+		{
+			return Packet();
+		}
+
+		*pPacketData = m_PackDataQ.front();
+
+		m_PackDataQ.front();
+		m_PackDataQ.pop_front();
+
+		return *pPacketData;
 	}
 
 	bool mIsRunProcessThread = false;
