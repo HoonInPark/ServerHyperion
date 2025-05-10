@@ -175,6 +175,7 @@ public:
 	}
 
 	// 1개의 스레드에서만 호출해야 한다!
+	// obj pooling must be implemented
 	bool SendMsg(const UINT32 dataSize_, char* pMsg_)
 	{	
 		auto sendOverlappedEx = new stOverlappedEx;

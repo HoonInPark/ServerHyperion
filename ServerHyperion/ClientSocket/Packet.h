@@ -16,7 +16,7 @@
 
 using namespace std;
 
-class SERVERHYPERION_API Serializer
+class SERVERHYPERION_API Packet
 {
 	/*
 	* <header structure>
@@ -34,7 +34,7 @@ class SERVERHYPERION_API Serializer
 	*/
 
 public:
-	Serializer(bool _bIsSender);
+	Packet(bool _bIsSender);
 
 	enum class Header : char
 	{
@@ -48,7 +48,7 @@ public:
 		ROT_Y,
 		ROT_Z,
 
-		IS_JUMPING,
+		IS_FALLING,
 
 		MAX
 	};
@@ -101,7 +101,7 @@ public:
 	{
 		if (m_IsJumping == _InIsJumping) return;
 		m_IsJumping = _InIsJumping;
-		m_Header[static_cast<int>(Header::IS_JUMPING)] = true;
+		m_Header[static_cast<int>(Header::IS_FALLING)] = true;
 	}
 
 	// For object pooling, you shouldn't make the conversion happen only in the constructor, 
@@ -121,7 +121,7 @@ public:
 	inline bool GetIsJumping() const { return m_IsJumping; }
 
 private:
-	__forceinline char // return byte
+	inline char // return byte
 		GetSize(Header _InHeaderIdx)
 	{
 		switch (_InHeaderIdx)
@@ -143,7 +143,7 @@ private:
 		case Header::ROT_Z:
 			return sizeof(double);
 
-		case Header::IS_JUMPING:
+		case Header::IS_FALLING:
 			return sizeof(bool);
 
 		default:

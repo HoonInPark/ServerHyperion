@@ -1,6 +1,6 @@
-#include "Serializer.h"
+#include "Packet.h"
 
-Serializer::Serializer(bool _bIsSender)
+Packet::Packet(bool _bIsSender)
 	: m_Header(static_cast<int>(Header::MAX), false)
 {
 	size_t DataSize = 0;
@@ -13,9 +13,9 @@ Serializer::Serializer(bool _bIsSender)
 		m_pBinData = new char[DataSize];
 }
 
-size_t Serializer::Write(char* _pOutStartPt)
+size_t Packet::Write(char* _pOutStartPt)
 {
-	_pOutStartPt = m_pBinData;
+	_pOutStartPt = m_pBinData; // copy m_pBinData ptr that is already alloced ptr mem
 
 	size_t WriteIdx = 0;
 
@@ -80,7 +80,7 @@ size_t Serializer::Write(char* _pOutStartPt)
 			break;
 		}
 
-		case Header::IS_JUMPING:
+		case Header::IS_FALLING:
 		{
 			CopyMemory(_pOutStartPt + WriteIdx, &m_IsJumping, sizeof(bool));
 			WriteIdx += sizeof(bool);
@@ -96,7 +96,7 @@ size_t Serializer::Write(char* _pOutStartPt)
 	return WriteIdx;
 }
 
-bool Serializer::Read(char* _pInStartPt, const size_t _InSize)
+bool Packet::Read(char* _pInStartPt, const size_t _InSize)
 {
 	m_pBinData = _pInStartPt;
 
@@ -157,7 +157,7 @@ bool Serializer::Read(char* _pInStartPt, const size_t _InSize)
 			break;
 		}
 
-		case Header::IS_JUMPING:
+		case Header::IS_FALLING:
 		{
 			CopyMemory(&m_IsJumping, _pInStartPt + ReadIdx, sizeof(bool));
 			ReadIdx += sizeof(bool);

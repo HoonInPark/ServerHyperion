@@ -81,7 +81,7 @@ size_t PacketData::Compress(char* _pOutStartPt)
 			break;
 		}
 
-		case Header::IS_JUMPING:
+		case Header::IS_FALLING:
 		{
 			CopyMemory(_pOutStartPt + WriteIdx, &m_IsJumping, sizeof(bool));
 			WriteIdx += sizeof(bool);
@@ -158,7 +158,7 @@ bool PacketData::Decompress(char* _pInStartPt, const size_t _InSize)
 			break;
 		}
 
-		case Header::IS_JUMPING:
+		case Header::IS_FALLING:
 		{
 			CopyMemory(&m_IsJumping, _pInStartPt + ReadIdx, sizeof(bool));
 			ReadIdx += sizeof(bool);
