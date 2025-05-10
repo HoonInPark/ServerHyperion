@@ -3,7 +3,7 @@
 Packet::Packet(bool _bIsSender)
 	: m_Header(static_cast<int>(Header::MAX), false)
 {
-	size_t DataSize = 0;
+	UINT32 DataSize = 0;
 
 	DataSize += m_Header.size(); // Header size
 	for (int i = 0; i < static_cast<int>(Header::MAX); ++i)
@@ -13,7 +13,7 @@ Packet::Packet(bool _bIsSender)
 		m_pBinData = new char[DataSize];
 }
 
-size_t Packet::Write(char* _pOutStartPt)
+UINT32 Packet::Write(char* _pOutStartPt)
 {
 	_pOutStartPt = m_pBinData; // copy m_pBinData ptr that is already alloced ptr mem
 
@@ -21,7 +21,7 @@ size_t Packet::Write(char* _pOutStartPt)
 
 	// write header
 	bool bHeader = false;
-	for (int i = 0; i < static_cast<size_t>(Header::MAX); ++i)
+	for (int i = 0; i < static_cast<int>(Header::MAX); ++i)
 	{
 		bHeader = m_Header[i];
 		CopyMemory(_pOutStartPt + WriteIdx, &bHeader, sizeof(char));
@@ -96,7 +96,7 @@ size_t Packet::Write(char* _pOutStartPt)
 	return WriteIdx;
 }
 
-bool Packet::Read(char* _pInStartPt, const size_t _InSize)
+bool Packet::Read(char* _pInStartPt, const UINT32 _InSize)
 {
 	m_pBinData = _pInStartPt;
 
@@ -105,7 +105,7 @@ bool Packet::Read(char* _pInStartPt, const size_t _InSize)
 		m_Header[i] = (bool)_pInStartPt[i];
 	}
 
-	size_t ReadIdx = static_cast<size_t>(Header::MAX);
+	UINT32 ReadIdx = static_cast<UINT32>(Header::MAX);
 	for (int i = 0; i < static_cast<int>(Header::MAX); ++i)
 	{
 		if (!m_Header[i]) continue;

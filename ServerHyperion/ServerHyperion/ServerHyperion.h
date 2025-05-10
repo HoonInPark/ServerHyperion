@@ -2,7 +2,7 @@
 
 #include "ServerIOCP.h"
 #include "PacketData.h"
-#include "Serializer.h"
+#include "Packet.h"
 
 #include <vector>
 #include <deque>
@@ -106,5 +106,8 @@ private:
 
 	mutex mLock;
 	deque<PacketData> mPacketDataQueue;
-	//deque <shared_ptr< PacketData >> mPacketDataQueue;
+
+	//////////////////////////////////////////////////////////////////////////
+	
+	deque<Packet> m_PackDataQ;
 };

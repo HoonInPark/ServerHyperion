@@ -78,19 +78,19 @@ public:
 		m_Header[static_cast<int>(Header::POS_Z)] = true;
 	}
 
-	inline void SetRotX(double _InRotX)
+	inline void SetRotPitch(double _InRotX)
 	{
 		if (m_RotX == _InRotX) return;
 		m_RotX = _InRotX;
 		m_Header[static_cast<int>(Header::ROT_X)] = true;
 	}
-	inline void SetRotY(double _InRotY)
+	inline void SetRotRoll(double _InRotY)
 	{
 		if (m_RotY == _InRotY) return;
 		m_RotY = _InRotY;
 		m_Header[static_cast<int>(Header::ROT_Y)] = true;
 	}
-	inline void SetRotZ(double _InRotZ)
+	inline void SetRotYaw(double _InRotZ)
 	{
 		if (m_RotZ == _InRotZ) return;
 		m_RotZ = _InRotZ;
@@ -108,8 +108,8 @@ public:
 	// but rather modify it so that it can happen after creation.
 
 	// called after Setting each value
-	size_t Write(char* _pOutStartPt);
-	bool Read(char* _pInStartPt, const size_t _InSize);
+	UINT32 Write(char* _pOutStartPt);
+	bool Read(char* _pInStartPt, const UINT32 _InSize);
 
 	inline UINT32 GetSessionIdx() const { return m_SessionIdx; }
 	inline double GetPosX() const { return m_PosX; }
@@ -121,7 +121,7 @@ public:
 	inline bool GetIsJumping() const { return m_IsJumping; }
 
 private:
-	inline char // return byte
+	inline UINT32 // return byte
 		GetSize(Header _InHeaderIdx)
 	{
 		switch (_InHeaderIdx)
