@@ -102,7 +102,7 @@ UINT32 Packet::Write(char* _pOutStartPt)
 
 bool Packet::Read(char* _pInStartPt, const UINT32 _InSize)
 {
-	m_pBinData = _pInStartPt;
+	_pInStartPt = m_pBinData;
 
 	for (int i = 0; i < static_cast<int>(Header::MAX); ++i)
 	{

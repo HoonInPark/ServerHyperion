@@ -149,9 +149,11 @@ xcopy /Y /I "$(SolutionDir)x64\Release\$(ProjectName).lib" "C:\Unreal\Projects\H
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Packet.h" />
+    <ClInclude Include="ThreadSafePool.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Packet.cpp" />
+    <ClCompile Include="ThreadSafePool.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
