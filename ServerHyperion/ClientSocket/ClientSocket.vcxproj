@@ -142,18 +142,23 @@
     </Link>
     <PostBuildEvent>
       <Command>xcopy /Y /S /I "$(ProjectDir)*.h" "C:\Unreal\Projects\Hyperion\Plugins\ServerHyperion\Source\ThirdParty\ServerHyperionLibrary\Public\ServerHyperionLibrary"
+xcopy /Y /S /I "$(ProjectDir)*.hpp" "C:\Unreal\Projects\Hyperion\Plugins\ServerHyperion\Source\ThirdParty\ServerHyperionLibrary\Public\ServerHyperionLibrary"
+xcopy /Y /S /I "$(ProjectDir)*.inl" "C:\Unreal\Projects\Hyperion\Plugins\ServerHyperion\Source\ThirdParty\ServerHyperionLibrary\Public\ServerHyperionLibrary"
 xcopy /Y /I "$(SolutionDir)x64\Release\$(ProjectName).dll" "C:\Unreal\Projects\Hyperion\Plugins\ServerHyperion\Binaries\ThirdParty\ServerHyperionLibrary\Win64"
 xcopy /Y /I "$(SolutionDir)x64\Release\$(ProjectName).dll" "C:\Unreal\Projects\Hyperion\Plugins\ServerHyperion\Source\ThirdParty\ServerHyperionLibrary\x64\Release"
 xcopy /Y /I "$(SolutionDir)x64\Release\$(ProjectName).lib" "C:\Unreal\Projects\Hyperion\Plugins\ServerHyperion\Source\ThirdParty\ServerHyperionLibrary\x64\Release"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="object_pool.hpp" />
     <ClInclude Include="Packet.h" />
-    <ClInclude Include="ThreadSafePool.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="object_pool.cpp" />
     <ClCompile Include="Packet.cpp" />
-    <ClCompile Include="ThreadSafePool.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="object_pool.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
