@@ -5,9 +5,11 @@
 #include "Packet.h"
 
 #include <vector>
-#include <deque>
 #include <thread>
 #include <mutex>
+#include <queue>
+
+#include "object_pool.hpp"
 
 using namespace std;
 
@@ -35,22 +37,26 @@ public:
 		PacketData packet;
 		packet.Set(clientIndex_, size_, pData_);
 
-		lock_guard<mutex> guard(mLock);
 		mPacketDataQueue.push_back(packet);
 		*/
 
-		Packet Pack;
+		lock_guard<mutex> guard(m_Lock);
 
-		if (!Pack.Read(pData_, size_))
-			printf("Deserialize FAILED");
+		Packet* pPack = m_pDymPackPool->new_object();
 		
-		lock_guard<mutex> guard(mLock);
+		if (pPack->Read(pData_, size_))
+			printf("[OnReceive] 클라이언트: Index(%d), dataSize(%d)\n", clientIndex_, size_);
+		else
+			printf("[OnReceive] Read Bin Data Failed");
 
-		m_PackDataQ.push_back(Pack);
+		m_pPackQ->push(pPack);
 	}
 
 	void Run(const UINT32 maxClient)
 	{
+		m_pDymPackPool = new DynamicObjectPool<Packet>(60);
+		m_pPackQ = new queue<Packet*>();
+
 		mIsRunProcessThread = true;
 		mProcessThread = thread( // lambda bind here use onlu a thread
 			[this]()
@@ -72,6 +78,9 @@ public:
 		}
 
 		DestroyThread();
+
+		delete m_pPackQ;
+		delete m_pDymPackPool;
 	}
 
 private:
@@ -79,6 +88,7 @@ private:
 	{
 		while (mIsRunProcessThread)
 		{
+			/*
 			auto packetData = DequePacketData();
 			if (packetData.GetSize() != 0)
 			{
@@ -96,12 +106,30 @@ private:
 			{
 				//this_thread::sleep_for(chrono::milliseconds(1)); // made it wait, not sleeping for arbitrary time
 			}
+			*/
+
+			if (auto pPack = DeQPack())
+			{
+				printf("pos x : %f, pos y : %f, pos z : %f, rot x : %f, rot y : %f, rot z : %f",
+					pPack->GetPosX(),
+					pPack->GetPosY(),
+					pPack->GetPosZ(),
+					pPack->GetRotX(),
+					pPack->GetRotY(),
+					pPack->GetRotZ());
+
+				m_pDymPackPool->delete_object(pPack);
+			}
+			else
+			{
+				this_thread::sleep_for(chrono::milliseconds(1)); // made it wait, not sleeping for arbitrary time
+			}
 		}
 	}
 
-	/*PacketData*/ Packet DequePacketData()
+	/*
+	PacketData DequePacketData()
 	{
-		/*
 		PacketData packetData;
 
 		lock_guard<mutex> guard(mLock);
@@ -116,32 +144,28 @@ private:
 		mPacketDataQueue.pop_front();
 
 		return packetData;
-		*/
 
-		Packet* pPacketData = new Packet();
+	}
+	*/
 
-		lock_guard<mutex> guard(mLock);
-		if (m_PackDataQ.empty())
-		{
-			return Packet();
-		}
+	Packet* DeQPack()
+	{
+		lock_guard<mutex> guard(m_Lock);
 
-		*pPacketData = m_PackDataQ.front();
+		if (m_pPackQ->empty()) return nullptr;
 
-		m_PackDataQ.front();
-		m_PackDataQ.pop_front();
+		auto pPack =  m_pPackQ->front();
+		m_pPackQ->pop();
 
-		return *pPacketData;
+		return pPack;
 	}
 
 	bool mIsRunProcessThread = false;
 
 	thread mProcessThread;
 
-	mutex mLock;
-	deque<PacketData> mPacketDataQueue;
-
-	//////////////////////////////////////////////////////////////////////////
+	mutex m_Lock;
 	
-	deque<Packet> m_PackDataQ;
+	DynamicObjectPool<Packet>* m_pDymPackPool{ nullptr };
+	queue<Packet*>* m_pPackQ{ nullptr };
 };

@@ -182,7 +182,7 @@ private:
 	{
 		for (auto& client : mClientInfos)
 		{
-			if (client->IsConnectd() == false)
+			if (client->IsConnected() == false)
 			{
 				return client;
 			}
@@ -292,7 +292,7 @@ private:
 
 			for (auto client : mClientInfos)
 			{
-				if (client->IsConnectd())
+				if (client->IsConnected())
 				{
 					continue;
 				}

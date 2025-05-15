@@ -24,7 +24,7 @@ public:
 
 	UINT32 GetIndex() { return mIndex; }
 
-	bool IsConnectd() { return mIsConnect == 1; }
+	bool IsConnected() { return mIsConnect == 1; }
 	
 	SOCKET GetSock() { return mSocket; }
 

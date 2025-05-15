@@ -4,7 +4,6 @@
 #include <iostream>
 #include <string>
 #include "ServerHyperion.h"
-#include "object_pool.hpp"
 
 using namespace std;
 
@@ -41,8 +40,6 @@ int main()
 
 int main()
 {
-	auto test = new DynamicObjectPool<int>(10);
-
 	ServerHyperion server;
 
 	//소켓을 초기화

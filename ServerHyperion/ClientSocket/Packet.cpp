@@ -1,20 +1,20 @@
 #include "Packet.h"
 
 Packet::Packet()
-	: m_Header(static_cast<int>(Header::MAX), false)
 {
+	/*
 	UINT32 DataSize = 0;
-
 	DataSize += m_Header.size(); // Header size
 	for (int i = 0; i < static_cast<int>(Header::MAX); ++i)
 		DataSize += GetSize(static_cast<Header>(i)); // add size of each value
 	
 	m_pBinData = new char[DataSize];
+	*/
 }
 
 Packet::~Packet()
 {
-	delete[] m_pBinData;
+	//delete[] m_pBinData;
 }
 
 UINT32 Packet::Write(char* _pOutStartPt)

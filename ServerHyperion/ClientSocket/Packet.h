@@ -17,6 +17,8 @@
 
 using namespace std;
 
+#define PACK_BIN_SIZE 61
+
 class SERVERHYPERION_API Packet
 {
 	/*
@@ -37,7 +39,7 @@ class SERVERHYPERION_API Packet
 public:
 	Packet();
 	~Packet();
-
+	/*
 	Packet& operator=(const Packet& Other)
 	{
 		if (this == &Other)
@@ -76,7 +78,7 @@ public:
 
 		return *this;
 	}
-
+	*/
 	enum class Header : char
 	{
 		SESSION_IDX = 0,
@@ -163,6 +165,7 @@ public:
 
 	inline UINT32 GetSize() { return m_BinDataSizeTmp; }
 
+/*
 private:
 	inline UINT32 // return byte
 		GetSize(Header _InHeaderIdx)
@@ -193,9 +196,10 @@ private:
 			return 0;
 		}
 	}
+*/
 
 private:
-	vector<bool> m_Header;
+	vector<bool> m_Header{ vector<bool>(static_cast<int>(Header::MAX), false) };
 
 	///////////////////////// cache data /////////////////////////
 	UINT32 m_SessionIdx{ 0 };
@@ -211,7 +215,7 @@ private:
 	bool m_IsJumping{ false };
 
 	////////////////////// bin //////////////////////
-	char* m_pBinData;
+	char m_pBinData[PACK_BIN_SIZE];
 	UINT32 m_BinDataSizeTmp;
 	//////////////////// bin end ////////////////////
 
