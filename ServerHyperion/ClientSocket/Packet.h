@@ -9,6 +9,7 @@
 #endif
 
 #define WIN32_LEAN_AND_MEAN
+
 #define TO_BE_DEPRECATED
 
 #include <windows.h>
