@@ -2,19 +2,20 @@
 
 Packet::Packet()
 {
-	/*
 	UINT32 DataSize = 0;
 	DataSize += m_Header.size(); // Header size
 	for (int i = 0; i < static_cast<int>(Header::MAX); ++i)
 		DataSize += GetSize(static_cast<Header>(i)); // add size of each value
-	
+
 	m_pBinData = new char[DataSize];
-	*/
 }
 
 Packet::~Packet()
 {
-	//delete[] m_pBinData;
+	if (m_pBinData)
+		delete[] m_pBinData;
+
+	m_pBinData = nullptr;
 }
 
 UINT32 Packet::Write(char* _pOutStartPt)

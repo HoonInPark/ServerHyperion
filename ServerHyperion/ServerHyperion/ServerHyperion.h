@@ -9,7 +9,7 @@
 #include <mutex>
 #include <queue>
 
-#include "object_pool.hpp"
+#include "ObjPool.h"
 
 using namespace std;
 
@@ -31,31 +31,32 @@ public:
 
 	virtual void OnReceive(const UINT32 clientIndex_, const UINT32 size_, char* pData_) override
 	{
-		/*
-		printf("[OnReceive] 클라이언트: Index(%d), dataSize(%d)\n", clientIndex_, size_);
+		shared_ptr<Packet> pPack = nullptr;
 
-		PacketData packet;
-		packet.Set(clientIndex_, size_, pData_);
+		for (;;)
+		{
+			if (!m_pPackPool->Acquire(pPack))
+			{
+				this_thread::sleep_for(chrono::milliseconds(1));
+				continue;
+			}
 
-		mPacketDataQueue.push_back(packet);
-		*/
+			if (pPack->Read(pData_, size_))
+			{
+				printf("[OnReceive] 클라이언트: Index(%d), dataSize(%d)\n", clientIndex_, size_);
 
-		lock_guard<mutex> guard(m_Lock);
+				m_pPackQ->push(pPack);
+			}
+			else printf("[OnReceive] Read Bin Data Failed");
 
-		Packet* pPack = m_pDymPackPool->new_object();
-		
-		if (pPack->Read(pData_, size_))
-			printf("[OnReceive] 클라이언트: Index(%d), dataSize(%d)\n", clientIndex_, size_);
-		else
-			printf("[OnReceive] Read Bin Data Failed");
-
-		m_pPackQ->push(pPack);
+			break;
+		}
 	}
 
 	void Run(const UINT32 maxClient)
 	{
-		m_pDymPackPool = new DynamicObjectPool<Packet>(60);
-		m_pPackQ = new queue<Packet*>();
+		m_pPackPool = new ObjPool<Packet>(60);
+		m_pPackQ = new concurrent_queue<shared_ptr< Packet >>();
 
 		mIsRunProcessThread = true;
 		mProcessThread = thread( // lambda bind here use onlu a thread
@@ -80,35 +81,17 @@ public:
 		DestroyThread();
 
 		delete m_pPackQ;
-		delete m_pDymPackPool;
+		delete m_pPackPool;
 	}
 
 private:
 	void ProcessPacket()
 	{
+		shared_ptr<Packet> pPack = nullptr;
+
 		while (mIsRunProcessThread)
 		{
-			/*
-			auto packetData = DequePacketData();
-			if (packetData.GetSize() != 0)
-			{
-				printf("pos x : %f, pos y : %f, pos z : %f, rot x : %f, rot y : %f, rot z : %f", 
-					packetData.GetPosX(),
-					packetData.GetPosY(),
-					packetData.GetPosZ(),
-					packetData.GetRotX(),
-					packetData.GetRotY(),
-					packetData.GetRotZ());
-
-				//SendMsg(packetData.SessionIndex, packetData.DataSize, packetData.pPacketData); // code made for echo server, unused for hyperion prj
-			}
-			else
-			{
-				//this_thread::sleep_for(chrono::milliseconds(1)); // made it wait, not sleeping for arbitrary time
-			}
-			*/
-
-			if (auto pPack = DeQPack())
+			if (m_pPackQ->try_pop(pPack))
 			{
 				printf("pos x : %f, pos y : %f, pos z : %f, rot x : %f, rot y : %f, rot z : %f",
 					pPack->GetPosX(),
@@ -118,7 +101,7 @@ private:
 					pPack->GetRotY(),
 					pPack->GetRotZ());
 
-				m_pDymPackPool->delete_object(pPack);
+				m_pPackPool->Return(pPack);
 			}
 			else
 			{
@@ -127,45 +110,12 @@ private:
 		}
 	}
 
-	/*
-	PacketData DequePacketData()
-	{
-		PacketData packetData;
-
-		lock_guard<mutex> guard(mLock);
-		if (mPacketDataQueue.empty())
-		{
-			return PacketData();
-		}
-
-		packetData.Set(mPacketDataQueue.front());
-
-		mPacketDataQueue.front().Release();
-		mPacketDataQueue.pop_front();
-
-		return packetData;
-
-	}
-	*/
-
-	Packet* DeQPack()
-	{
-		lock_guard<mutex> guard(m_Lock);
-
-		if (m_pPackQ->empty()) return nullptr;
-
-		auto pPack =  m_pPackQ->front();
-		m_pPackQ->pop();
-
-		return pPack;
-	}
-
 	bool mIsRunProcessThread = false;
 
 	thread mProcessThread;
 
 	mutex m_Lock;
-	
-	DynamicObjectPool<Packet>* m_pDymPackPool{ nullptr };
-	queue<Packet*>* m_pPackQ{ nullptr };
+
+	ObjPool<Packet>* m_pPackPool;
+	concurrent_queue <shared_ptr< Packet >>* m_pPackQ{ nullptr };
 };
