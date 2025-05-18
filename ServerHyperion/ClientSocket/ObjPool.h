@@ -7,13 +7,11 @@
 #define SERVERHYPERION_API __declspec(dllimport)
 #endif
 
-
 #include <iostream>
-#include <concurrent_queue.h>
+#include <queue>
 #include <utility>
 
 using namespace std;
-using namespace Concurrency;
 
 template <typename T>
 class SERVERHYPERION_API ObjPool
@@ -22,11 +20,11 @@ public:
 	template <class... P>
 	ObjPool(size_t _InInitSize, P&&... params);
 
-	bool Acquire(shared_ptr<T> _pOutElem);
-	void Return(shared_ptr<T> _pInElem);
+	bool Acquire(shared_ptr<T>& _pOutElem);
+	void Return(shared_ptr<T>& _pInElem);
 
 private:
-	concurrent_queue <shared_ptr< T >> m_Data;
+	queue <shared_ptr< T >> m_Data;
 };
 
 template<typename T>
@@ -40,13 +38,19 @@ inline ObjPool<T>::ObjPool(size_t _InInitSize, P&&... params)
 }
 
 template<typename T>
-inline bool ObjPool<T>::Acquire(shared_ptr<T> _pOutElem)
+inline bool ObjPool<T>::Acquire(shared_ptr<T>& _pOutElem)
 {
-	return m_Data.try_pop(_pOutElem);
+	if (_pOutElem = m_Data.front());
+	{
+		m_Data.pop();
+		return true;
+	}
+
+	return false;
 }
 
 template<typename T>
-inline void ObjPool<T>::Return(shared_ptr<T> _pInElem)
+inline void ObjPool<T>::Return(shared_ptr<T>& _pInElem)
 {
 	m_Data.push(_pInElem);
 }

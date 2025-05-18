@@ -150,7 +150,7 @@ public:
 	// but rather modify it so that it can happen after creation.
 
 	// called after Setting each value
-	UINT32 Write(char* _pOutStartPt);
+	UINT32 Write(char*& _pOutStartPt);
 	bool Read(char* _pInStartPt, const UINT32 _InSize);
 
 	inline UINT32 GetSessionIdx() const { return m_SessionIdx; }

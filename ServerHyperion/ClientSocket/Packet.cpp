@@ -18,7 +18,7 @@ Packet::~Packet()
 	m_pBinData = nullptr;
 }
 
-UINT32 Packet::Write(char* _pOutStartPt)
+UINT32 Packet::Write(char*& _pOutStartPt)
 {
 	_pOutStartPt = m_pBinData; // copy m_pBinData ptr that is already alloced ptr mem
 
@@ -174,5 +174,6 @@ bool Packet::Read(char* _pInStartPt, const UINT32 _InSize)
 	}
 
 	fill(m_Header.begin(), m_Header.end(), false);
-	return false;
+	
+	return true;
 }

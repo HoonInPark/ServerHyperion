@@ -33,30 +33,28 @@ public:
 	{
 		shared_ptr<Packet> pPack = nullptr;
 
-		for (;;)
+		m_Lock.lock();
+		if (!m_pPackPool->Acquire(pPack))
 		{
-			if (!m_pPackPool->Acquire(pPack))
-			{
-				this_thread::sleep_for(chrono::milliseconds(1));
-				continue;
-			}
-
-			if (pPack->Read(pData_, size_))
-			{
-				printf("[OnReceive] 클라이언트: Index(%d), dataSize(%d)\n", clientIndex_, size_);
-
-				m_pPackQ->push(pPack);
-			}
-			else printf("[OnReceive] Read Bin Data Failed");
-
-			break;
+			m_Lock.unlock();
+			return;
 		}
+
+		if (pPack->Read(pData_, size_))
+		{
+			printf("[OnReceive] 클라이언트: Index(%d), dataSize(%d)\n", clientIndex_, size_);
+
+			m_pPackQ->push(pPack);
+		}
+		else printf("[OnReceive] Read Bin Data Failed");
+	
+		m_Lock.unlock();
 	}
 
 	void Run(const UINT32 maxClient)
 	{
 		m_pPackPool = new ObjPool<Packet>(60);
-		m_pPackQ = new concurrent_queue<shared_ptr< Packet >>();
+		m_pPackQ = new queue<shared_ptr< Packet >>();
 
 		mIsRunProcessThread = true;
 		mProcessThread = thread( // lambda bind here use onlu a thread
@@ -91,8 +89,12 @@ private:
 
 		while (mIsRunProcessThread)
 		{
-			if (m_pPackQ->try_pop(pPack))
+			pPack = nullptr;
+			m_Lock.lock();
+
+			if (!m_pPackQ->empty())
 			{
+				pPack = m_pPackQ->front();
 				printf("pos x : %f, pos y : %f, pos z : %f, rot x : %f, rot y : %f, rot z : %f",
 					pPack->GetPosX(),
 					pPack->GetPosY(),
@@ -101,10 +103,13 @@ private:
 					pPack->GetRotY(),
 					pPack->GetRotZ());
 
+				m_pPackQ->pop();
 				m_pPackPool->Return(pPack);
+				m_Lock.unlock();
 			}
 			else
 			{
+				m_Lock.unlock();
 				this_thread::sleep_for(chrono::milliseconds(1)); // made it wait, not sleeping for arbitrary time
 			}
 		}
@@ -116,6 +121,6 @@ private:
 
 	mutex m_Lock;
 
-	ObjPool<Packet>* m_pPackPool;
-	concurrent_queue <shared_ptr< Packet >>* m_pPackQ{ nullptr };
+	ObjPool<Packet>* m_pPackPool{ nullptr };
+	queue <shared_ptr< Packet >>* m_pPackQ{ nullptr };
 };
