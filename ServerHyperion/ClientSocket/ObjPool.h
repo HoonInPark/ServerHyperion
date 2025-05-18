@@ -17,6 +17,8 @@ template <typename T>
 class SERVERHYPERION_API ObjPool
 {
 public:
+	ObjPool() = default;
+
 	template <class... P>
 	ObjPool(size_t _InInitSize, P&&... params);
 
