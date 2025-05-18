@@ -60,7 +60,7 @@ public:
 		mProcessThread = thread( // lambda bind here use onlu a thread
 			[this]()
 			{
-				ProcessPacket();
+				ProcPack();
 			}
 		);
 
@@ -83,7 +83,7 @@ public:
 	}
 
 private:
-	void ProcessPacket()
+	void ProcPack()
 	{
 		shared_ptr<Packet> pPack = nullptr;
 

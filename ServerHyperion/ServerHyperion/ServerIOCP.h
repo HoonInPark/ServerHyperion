@@ -219,7 +219,8 @@ private:
 
 		while (mIsWorkerRun)
 		{
-			bSuccess = GetQueuedCompletionStatus(mIOCPHandle,
+			bSuccess = GetQueuedCompletionStatus(
+				mIOCPHandle,
 				&dwIoSize,					// 실제로 전송된 바이트
 				(PULONG_PTR)&pClientInfo,		// CompletionKey
 				&lpOverlapped,				// Overlapped IO 객체
@@ -247,8 +248,9 @@ private:
 				continue;
 			}
 
-
-			if (IOOperation::ACCEPT == pOverlappedEx->m_eOperation)
+			switch (pOverlappedEx->m_eOperation)
+			{
+			case IOOperation::ACCEPT:
 			{
 				pClientInfo = GetClientInfo(pOverlappedEx->SessionIndex);
 				if (pClientInfo->AcceptCompletion())
@@ -262,23 +264,26 @@ private:
 				{
 					CloseSocket(pClientInfo, true);
 				}
+
+				break;
 			}
-			//Overlapped I/O Recv작업 결과 뒤 처리
-			else if (IOOperation::RECV == pOverlappedEx->m_eOperation)
+			case IOOperation::RECV:
 			{
 				OnReceive(pClientInfo->GetIndex(), dwIoSize, pClientInfo->RecvBuffer());
 
 				pClientInfo->BindRecv();
+
+				break;
 			}
-			//Overlapped I/O Send작업 결과 뒤 처리
-			else if (IOOperation::SEND == pOverlappedEx->m_eOperation)
+			case IOOperation::SEND:
 			{
 				pClientInfo->SendCompleted(dwIoSize);
+
+				break;
 			}
-			//예외 상황
-			else
-			{
+			default:
 				printf("Client Index(%d)에서 예외상황\n", pClientInfo->GetIndex());
+				break;
 			}
 		}
 	}
