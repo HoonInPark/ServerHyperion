@@ -31,10 +31,10 @@ public:
 
 	virtual void OnReceive(const UINT32 clientIndex_, const UINT32 size_, char* pData_) override
 	{
-		shared_ptr<Packet> pPack = nullptr;
+		shared_ptr<Packet> pPack = m_pPackPool->Acquire();
 
 		m_Lock.lock();
-		if (!m_pPackPool->Acquire(pPack))
+		if (!pPack)
 		{
 			m_Lock.unlock();
 			return;
