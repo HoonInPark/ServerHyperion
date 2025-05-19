@@ -103,14 +103,12 @@ UINT32 Packet::Write(char*& _pOutStartPt)
 
 bool Packet::Read(char* _pInStartPt, const UINT32 _InSize)
 {
-	_pInStartPt = m_pBinData;
-
 	for (int i = 0; i < static_cast<int>(Header::MAX); ++i)
 	{
 		m_Header[i] = (bool)_pInStartPt[i];
 	}
 
-	UINT32 ReadIdx = static_cast<UINT32>(Header::MAX);
+	UINT32 ReadIdx = 0;
 	for (int i = 0; i < static_cast<int>(Header::MAX); ++i)
 	{
 		if (!m_Header[i]) continue;
