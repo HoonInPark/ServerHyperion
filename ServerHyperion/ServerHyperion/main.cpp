@@ -13,6 +13,7 @@ const UINT32 MAX_IO_WORKER_THREAD = 4;  //쓰레드 풀에 넣을 쓰레드 수
 
 int main()
 {
+	/*
 	ServerHyperion server;
 
 	//소켓을 초기화
@@ -37,4 +38,25 @@ int main()
 
 	server.End();
 	return 0;
+	*/
+
+	auto test1 = new Packet();
+
+	test1->SetSessionIdx(0);
+	test1->SetPosX(0.1f);
+	test1->SetPosY(0.2f);
+	test1->SetPosZ(0.3f);
+
+	char* CharTest = nullptr;
+
+	UINT32 a = test1->Write(CharTest);
+
+	auto test2 = new Packet();
+
+	test2->Read(CharTest, a);
+
+	printf("%f %f %f",
+		test2->GetPosX(),
+		test2->GetPosY(),
+		test2->GetPosZ());
 }
