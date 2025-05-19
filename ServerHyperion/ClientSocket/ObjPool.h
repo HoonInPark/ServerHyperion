@@ -43,7 +43,8 @@ inline ObjPool<T>::ObjPool(size_t _InInitSize, P&&... params)
 template<typename T>
 inline shared_ptr<T> ObjPool<T>::Acquire()
 {
-	if (m_Data.empty()) return nullptr;
+	if (m_Data.empty()) 
+		return nullptr;
 	
 	shared_ptr<T> RetPtr = m_Data.front();
 	m_Data.pop();
