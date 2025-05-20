@@ -240,7 +240,7 @@ private:
 
 			auto pOverlappedEx = (stOverlappedEx*)lpOverlapped;
 
-			//client°¡ Á¢¼ÓÀ» ²÷¾úÀ»¶§..			
+			//client°¡ Á¢¼ÓÀ» ²÷¾úÀ»¶§..
 			if (FALSE == bSuccess || (0 == dwIoSize && IOOperation::ACCEPT != pOverlappedEx->m_eOperation))
 			{
 				//printf("socket(%d) Á¢¼Ó ²÷±è\n", (int)pClientInfo->m_socketClient);
@@ -329,8 +329,6 @@ private:
 
 		OnClose(clientIndex);
 	}
-
-
 
 	UINT32 MaxIOWorkerThreadCount{ 0 };
 
