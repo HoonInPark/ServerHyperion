@@ -47,7 +47,7 @@ public:
 			m_pPackQ->push(pPack);
 		}
 		else printf("[OnReceive] Read Bin Data Failed");
-	
+
 		m_Lock.unlock();
 	}
 
@@ -85,6 +85,7 @@ public:
 private:
 	void ProcPack()
 	{
+		Packet CachePack;
 		shared_ptr<Packet> pPack = nullptr;
 
 		while (mIsRunProcessThread)
@@ -92,26 +93,29 @@ private:
 			pPack = nullptr;
 			m_Lock.lock();
 
-			if (!m_pPackQ->empty())
-			{
-				pPack = m_pPackQ->front();
-				printf("pos x : %f, pos y : %f, pos z : %f, rot x : %f, rot y : %f, rot z : %f",
-					pPack->GetPosX(),
-					pPack->GetPosY(),
-					pPack->GetPosZ(),
-					pPack->GetRotX(),
-					pPack->GetRotY(),
-					pPack->GetRotZ());
-
-				m_pPackQ->pop();
-				m_pPackPool->Return(pPack);
-				m_Lock.unlock();
-			}
-			else
+			if (m_pPackQ->empty())
 			{
 				m_Lock.unlock();
 				this_thread::sleep_for(chrono::milliseconds(1)); // made it wait, not sleeping for arbitrary time
+
+				continue;
 			}
+
+			pPack = m_pPackQ->front();
+			CachePack.CacheWrite(pPack);
+			m_pPackQ->pop();
+
+			m_pPackPool->Return(pPack);
+
+			m_Lock.unlock();
+
+			printf("pos x : %f, pos y : %f, pos z : %f, rot x : %f, rot y : %f, rot z : %f",
+				CachePack.GetPosX(),
+				CachePack.GetPosY(),
+				CachePack.GetPosZ(),
+				CachePack.GetRotX(),
+				CachePack.GetRotY(),
+				CachePack.GetRotZ());
 		}
 	}
 

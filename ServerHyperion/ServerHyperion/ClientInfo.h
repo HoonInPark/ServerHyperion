@@ -195,7 +195,7 @@ public:
 		}
 		
 		return true;
-	}	
+	}
 
 	void SendCompleted(const UINT32 dataSize_)
 	{		

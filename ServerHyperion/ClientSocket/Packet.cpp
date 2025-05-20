@@ -87,7 +87,7 @@ UINT32 Packet::Write(char*& _pOutStartPt)
 
 		case Header::IS_FALLING:
 		{
-			CopyMemory(_pOutStartPt + WriteIdx, &m_IsJumping, sizeof(bool));
+			CopyMemory(_pOutStartPt + WriteIdx, &m_bIsJumping, sizeof(bool));
 			WriteIdx += sizeof(bool);
 			break;
 		}
@@ -98,11 +98,14 @@ UINT32 Packet::Write(char*& _pOutStartPt)
 	}
 
 	fill(m_Header.begin(), m_Header.end(), false);
+
 	return WriteIdx;
 }
 
 bool Packet::Read(char* _pInStartPt, const UINT32 _InSize)
 {
+	fill(m_Header.begin(), m_Header.end(), false);
+
 	for (int i = 0; i < static_cast<int>(Header::MAX); ++i)
 	{
 		m_Header[i] = (bool)_pInStartPt[i];
@@ -162,7 +165,7 @@ bool Packet::Read(char* _pInStartPt, const UINT32 _InSize)
 
 		case Header::IS_FALLING:
 		{
-			CopyMemory(&m_IsJumping, _pInStartPt + ReadIdx, sizeof(bool));
+			CopyMemory(&m_bIsJumping, _pInStartPt + ReadIdx, sizeof(bool));
 			ReadIdx += sizeof(bool);
 			break;
 		}
@@ -170,8 +173,48 @@ bool Packet::Read(char* _pInStartPt, const UINT32 _InSize)
 			break;
 		}
 	}
-
-	fill(m_Header.begin(), m_Header.end(), false);
 	
+	return true;
+}
+
+bool Packet::CacheWrite(shared_ptr<Packet> _InPack)
+{
+	if (_InPack.get() == this) return false;
+
+	for (int i = 0; i < static_cast<int>(Header::MAX); ++i)
+	{
+		if (!_InPack->GetHeader()[i]) continue;
+
+		switch (static_cast<Header>(i))
+		{
+		case Header::SESSION_IDX:
+			m_SessionIdx = _InPack->GetSessionIdx();
+			break;
+		case Header::POS_X:
+			m_PosX = _InPack->GetPosX();
+			break;
+		case Header::POS_Y:
+			m_PosY = _InPack->GetPosY();
+			break;
+		case Header::POS_Z:
+			m_PosZ = _InPack->GetPosZ();
+			break;
+		case Header::ROT_X:
+			m_RotX = _InPack->GetRotX();
+			break;
+		case Header::ROT_Y:
+			m_RotY = _InPack->GetRotY();
+			break;
+		case Header::ROT_Z:
+			m_RotZ = _InPack->GetRotZ();
+			break;
+		case Header::IS_FALLING:
+			m_bIsJumping = _InPack->GetIsJumping();
+			break;
+		default:
+			break;
+		}
+	}
+
 	return true;
 }

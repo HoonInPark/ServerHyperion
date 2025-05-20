@@ -13,6 +13,7 @@
 #define TO_BE_DEPRECATED
 
 #include <windows.h>
+#include <iostream>
 #include <vector>
 
 using namespace std;
@@ -38,46 +39,6 @@ public:
 	Packet();
 	~Packet();
 
-	/*
-	Packet& operator=(const Packet& Other)
-	{
-		if (this == &Other)
-			return *this;  // 자기 자신 보호
-
-		// 헤더 복사
-		m_Header = Other.m_Header;
-
-		// 값 복사
-		m_SessionIdx = Other.m_SessionIdx;
-
-		m_PosX = Other.m_PosX;
-		m_PosY = Other.m_PosY;
-		m_PosZ = Other.m_PosZ;
-
-		m_RotX = Other.m_RotX;
-		m_RotY = Other.m_RotY;
-		m_RotZ = Other.m_RotZ;
-
-		m_IsJumping = Other.m_IsJumping;
-
-		// 이진 데이터 복사
-		if (m_pBinData)
-		{
-			delete[] m_pBinData;
-			m_pBinData = nullptr;
-		}
-
-		m_BinDataSizeTmp = Other.m_BinDataSizeTmp;
-
-		if (Other.m_pBinData && Other.m_BinDataSizeTmp > 0)
-		{
-			m_pBinData = new char[m_BinDataSizeTmp];
-			memcpy(m_pBinData, Other.m_pBinData, m_BinDataSizeTmp);
-		}
-
-		return *this;
-	}
-	*/
 	enum class Header : char
 	{
 		SESSION_IDX = 0,
@@ -103,46 +64,39 @@ public:
 
 	inline void SetPosX(double _InPosX)
 	{
-		if (m_PosX == _InPosX) return;
 		m_PosX = _InPosX;
 		m_Header[static_cast<int>(Header::POS_X)] = true;
 	}
 	inline void SetPosY(double _InPosY)
 	{
-		if (m_PosY == _InPosY) return;
 		m_PosY = _InPosY;
 		m_Header[static_cast<int>(Header::POS_Y)] = true;
 	}
 	inline void SetPosZ(double _InPosZ)
 	{
-		if (m_PosZ == _InPosZ) return;
 		m_PosZ = _InPosZ;
 		m_Header[static_cast<int>(Header::POS_Z)] = true;
 	}
 
 	inline void SetRotPitch(double _InRotX)
 	{
-		if (m_RotX == _InRotX) return;
 		m_RotX = _InRotX;
 		m_Header[static_cast<int>(Header::ROT_X)] = true;
 	}
 	inline void SetRotRoll(double _InRotY)
 	{
-		if (m_RotY == _InRotY) return;
 		m_RotY = _InRotY;
 		m_Header[static_cast<int>(Header::ROT_Y)] = true;
 	}
 	inline void SetRotYaw(double _InRotZ)
 	{
-		if (m_RotZ == _InRotZ) return;
 		m_RotZ = _InRotZ;
 		m_Header[static_cast<int>(Header::ROT_Z)] = true;
 	}
 
 	inline void SetIsJumping(bool _InIsJumping)
 	{
-		if (m_IsJumping == _InIsJumping) return;
-		m_IsJumping = _InIsJumping;
+		m_bIsJumping = _InIsJumping;
 		m_Header[static_cast<int>(Header::IS_FALLING)] = true;
 	}
 
@@ -153,6 +107,10 @@ public:
 	UINT32 Write(char*& _pOutStartPt);
 	bool Read(char* _pInStartPt, const UINT32 _InSize);
 
+	bool CacheWrite(shared_ptr<Packet> _InPack);
+
+	inline const vector<bool>& GetHeader() { return m_Header; }
+
 	inline UINT32 GetSessionIdx() const { return m_SessionIdx; }
 	inline double GetPosX() const { return m_PosX; }
 	inline double GetPosY() const { return m_PosY; }
@@ -160,10 +118,9 @@ public:
 	inline double GetRotX() const { return m_RotX; }
 	inline double GetRotY() const { return m_RotY; }
 	inline double GetRotZ() const { return m_RotZ; }
-	inline bool GetIsJumping() const { return m_IsJumping; }
+	inline bool GetIsJumping() const { return m_bIsJumping; }
 
 	inline UINT32 GetSize() { return m_BinDataSizeTmp; }
-
 
 private:
 	inline UINT32 // return byte
@@ -199,7 +156,6 @@ private:
 private:
 	vector<bool> m_Header{ vector<bool>(static_cast<int>(Header::MAX), false) };
 
-	///////////////////////// cache data /////////////////////////
 	UINT32 m_SessionIdx{ 0 };
 
 	double m_PosX{ 0.f };
@@ -210,7 +166,7 @@ private:
 	double m_RotY{ 0.f };
 	double m_RotZ{ 0.f };
 
-	bool m_IsJumping{ false };
+	bool m_bIsJumping{ false };
 
 	////////////////////// bin //////////////////////
 	char* m_pBinData;
