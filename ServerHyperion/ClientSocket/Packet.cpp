@@ -108,7 +108,7 @@ bool Packet::Read(char* _pInStartPt, const UINT32 _InSize)
 		m_Header[i] = (bool)_pInStartPt[i];
 	}
 
-	UINT32 ReadIdx = 0;
+	UINT32 ReadIdx = static_cast<UINT32>(Header::MAX);
 	for (int i = 0; i < static_cast<int>(Header::MAX); ++i)
 	{
 		if (!m_Header[i]) continue;
