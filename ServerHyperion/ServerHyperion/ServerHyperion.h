@@ -108,7 +108,7 @@ private:
 			m_pPackPool->Return(pPack);
 
 			m_Lock.unlock();
-
+			/*
 			printf("pos x : %f, pos y : %f, pos z : %f, rot x : %f, rot y : %f, rot z : %f",
 				CachePack.GetPosX(),
 				CachePack.GetPosY(),
@@ -116,6 +116,7 @@ private:
 				CachePack.GetRotX(),
 				CachePack.GetRotY(),
 				CachePack.GetRotZ());
+			*/
 		}
 	}
 
