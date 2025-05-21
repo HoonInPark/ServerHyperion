@@ -25,7 +25,7 @@ public:
 	UINT32 GetIndex() { return mIndex; }
 
 	bool IsConnected() { return mIsConnect == 1; }
-	
+
 	SOCKET GetSock() { return mSocket; }
 
 	UINT64 GetLatestClosedTimeSec() { return mLatestClosedTimeSec; }
@@ -37,7 +37,7 @@ public:
 	{
 		mSocket = socket_;
 		mIsConnect = 1;
-		
+
 		Clear();
 
 		//I/O Completion Port객체와 소켓을 연결시킨다.
@@ -53,7 +53,7 @@ public:
 	{
 		struct linger stLinger = { 0, 0 };	// SO_DONTLINGER로 설정
 
-	// bIsForce가 true이면 SO_LINGER, timeout = 0으로 설정하여 강제 종료 시킨다. 주의 : 데이터 손실이 있을수 있음 
+		// bIsForce가 true이면 SO_LINGER, timeout = 0으로 설정하여 강제 종료 시킨다. 주의 : 데이터 손실이 있을수 있음 
 		if (true == bIsForce)
 		{
 			stLinger.l_onoff = 1;
@@ -64,16 +64,16 @@ public:
 
 		//소켓 옵션을 설정한다.
 		setsockopt(mSocket, SOL_SOCKET, SO_LINGER, (char*)&stLinger, sizeof(stLinger));
-				
+
 		mIsConnect = 0;
 		mLatestClosedTimeSec = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 		//소켓 연결을 종료 시킨다.
-		closesocket(mSocket);		
+		closesocket(mSocket);
 		mSocket = INVALID_SOCKET;
 	}
 
 	void Clear()
-	{		
+	{
 	}
 
 	bool PostAccept(SOCKET listenSock_, const UINT64 curTimeSec_)
@@ -91,7 +91,7 @@ public:
 		}
 
 		ZeroMemory(&mAcceptContext, sizeof(stOverlappedEx));
-		
+
 		DWORD bytes = 0;
 		DWORD flags = 0;
 		mAcceptContext.m_wsaBuf.len = 0;
@@ -126,7 +126,7 @@ public:
 		char clientIP[32] = { 0, };
 		inet_ntop(AF_INET, &(stClientAddr.sin_addr), clientIP, 32 - 1);
 		printf("클라이언트 접속 : IP(%s) SOCKET(%d)\n", clientIP, (int)mSocket);
-		
+
 		return true;
 	}
 
@@ -177,14 +177,14 @@ public:
 	// 1개의 스레드에서만 호출해야 한다!
 	// obj pooling must be implemented
 	bool SendMsg(const UINT32 dataSize_, char* pMsg_)
-	{	
+	{
 		auto sendOverlappedEx = new stOverlappedEx;
 		ZeroMemory(sendOverlappedEx, sizeof(stOverlappedEx));
 		sendOverlappedEx->m_wsaBuf.len = dataSize_;
 		sendOverlappedEx->m_wsaBuf.buf = new char[dataSize_];
 		CopyMemory(sendOverlappedEx->m_wsaBuf.buf, pMsg_, dataSize_);
 		sendOverlappedEx->m_eOperation = IOOperation::SEND;
-		
+
 		std::lock_guard<std::mutex> guard(mSendLock);
 
 		mSendDataqueue.push(sendOverlappedEx);
@@ -193,12 +193,12 @@ public:
 		{
 			SendIO();
 		}
-		
+
 		return true;
 	}
 
 	void SendCompleted(const UINT32 dataSize_)
-	{		
+	{
 		printf("[송신 완료] bytes : %d\n", dataSize_);
 
 		std::lock_guard<std::mutex> guard(mSendLock);
@@ -282,5 +282,5 @@ private:
 	std::mutex mSendLock;
 	std::queue<stOverlappedEx*> mSendDataqueue;
 
-	
+
 };

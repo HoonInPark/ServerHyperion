@@ -1,7 +1,6 @@
 #pragma once
 
 #include "ServerIOCP.h"
-#include "PacketData.h"
 #include "Packet.h"
 
 #include <vector>
@@ -88,6 +87,11 @@ private:
 		Packet CachePack;
 		shared_ptr<Packet> pPack = nullptr;
 
+#pragma region echo region
+		char* pStart = nullptr;
+		UINT8 Size;
+#pragma endregion
+
 		while (mIsRunProcessThread)
 		{
 			pPack = nullptr;
@@ -117,6 +121,11 @@ private:
 				CachePack.GetRotY(),
 				CachePack.GetRotZ());
 			*/
+
+#pragma region echo region
+			Size = CachePack.Write(pStart);
+			SendMsg(CachePack.GetSessionIdx(), Size, pStart);
+#pragma endregion
 		}
 	}
 

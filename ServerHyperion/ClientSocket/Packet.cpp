@@ -183,6 +183,7 @@ bool Packet::CacheWrite(shared_ptr<Packet> _InPack)
 
 	for (int i = 0; i < static_cast<int>(Header::MAX); ++i)
 	{
+		m_Header[i] = _InPack->GetHeader()[i];
 		if (!_InPack->GetHeader()[i]) continue;
 
 		switch (static_cast<Header>(i))
