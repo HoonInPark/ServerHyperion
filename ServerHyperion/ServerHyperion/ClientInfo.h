@@ -23,15 +23,10 @@ public:
 	}
 
 	UINT32 GetIndex() { return mIndex; }
-
 	bool IsConnected() { return mIsConnect == 1; }
-
 	SOCKET GetSock() { return mSocket; }
-
 	UINT64 GetLatestClosedTimeSec() { return mLatestClosedTimeSec; }
-
 	char* RecvBuffer() { return mRecvBuf; }
-
 
 	bool OnConnect(HANDLE iocpHandle_, SOCKET socket_)
 	{

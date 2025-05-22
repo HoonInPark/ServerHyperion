@@ -41,7 +41,7 @@ public:
 
 		if (pPack->Read(pData_, size_))
 		{
-			printf("[OnReceive] 클라이언트: Index(%d), dataSize(%d)\n", clientIndex_, size_);
+			//printf("[OnReceive] 클라이언트: Index(%d), dataSize(%d)\n", clientIndex_, size_);
 
 			m_pPackQ->push(pPack);
 		}

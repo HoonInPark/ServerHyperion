@@ -146,9 +146,7 @@ public:
 	}
 
 	virtual void OnConnect(const UINT32 clientIndex_) {}
-
 	virtual void OnClose(const UINT32 clientIndex_) {}
-
 	virtual void OnReceive(const UINT32 clientIndex_, const UINT32 size_, char* pData_) {}
 
 private:
