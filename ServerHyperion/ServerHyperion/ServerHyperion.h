@@ -87,11 +87,6 @@ private:
 		Packet CachePack;
 		shared_ptr<Packet> pPack = nullptr;
 
-#pragma region echo region
-		char* pStart = nullptr;
-		UINT8 Size;
-#pragma endregion
-
 		while (mIsRunProcessThread)
 		{
 			pPack = nullptr;
@@ -112,20 +107,7 @@ private:
 			m_pPackPool->Return(pPack);
 
 			m_Lock.unlock();
-			/*
-			printf("pos x : %f, pos y : %f, pos z : %f, rot x : %f, rot y : %f, rot z : %f",
-				CachePack.GetPosX(),
-				CachePack.GetPosY(),
-				CachePack.GetPosZ(),
-				CachePack.GetRotX(),
-				CachePack.GetRotY(),
-				CachePack.GetRotZ());
-			*/
 
-#pragma region echo region
-			Size = CachePack.Write(pStart);
-			SendMsg(CachePack.GetSessionIdx(), Size, pStart);
-#pragma endregion
 		}
 	}
 
