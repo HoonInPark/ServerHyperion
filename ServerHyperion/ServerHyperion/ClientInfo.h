@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Define.h"
+#include "ObjPool.h"
 #include <stdio.h>
 #include <mutex>
 #include <queue>
@@ -14,6 +15,8 @@ public:
 	{
 		ZeroMemory(&mRecvOverlappedEx, sizeof(stOverlappedEx));
 		mSocket = INVALID_SOCKET;
+
+		m_SendDataPool = ObjPool<stOverlappedEx>(60);
 	}
 
 	void Init(const UINT32 index, HANDLE iocpHandle_)
@@ -151,7 +154,8 @@ public:
 		mRecvOverlappedEx.m_wsaBuf.buf = mRecvBuf;
 		mRecvOverlappedEx.m_eOperation = IOOperation::RECV;
 
-		int nRet = WSARecv(mSocket,
+		int nRet = WSARecv(
+			mSocket,
 			&(mRecvOverlappedEx.m_wsaBuf),
 			1,
 			&dwRecvNumBytes,
@@ -173,18 +177,29 @@ public:
 	// obj pooling must be implemented
 	bool SendMsg(const UINT32 dataSize_, char* pMsg_)
 	{
-		auto sendOverlappedEx = new stOverlappedEx;
-		ZeroMemory(sendOverlappedEx, sizeof(stOverlappedEx));
-		sendOverlappedEx->m_wsaBuf.len = dataSize_;
-		sendOverlappedEx->m_wsaBuf.buf = new char[dataSize_];
-		CopyMemory(sendOverlappedEx->m_wsaBuf.buf, pMsg_, dataSize_);
-		sendOverlappedEx->m_eOperation = IOOperation::SEND;
+		m_SendLock.lock();
 
-		std::lock_guard<std::mutex> guard(mSendLock);
+		shared_ptr<stOverlappedEx> pSendOverlappedEx = m_SendDataPool.Acquire();
+		if (!pSendOverlappedEx)
+		{
+			m_SendLock.unlock();
+			printf("SendMsg Error in Client %d", mIndex);
+			return false;
+		}
 
-		mSendDataqueue.push(sendOverlappedEx);
+		m_SendLock.unlock();
 
-		if (mSendDataqueue.size() == 1)
+		ZeroMemory(pSendOverlappedEx.get(), sizeof(stOverlappedEx));
+		pSendOverlappedEx->m_wsaBuf.len = dataSize_;
+		pSendOverlappedEx->m_wsaBuf.buf = new char[dataSize_];
+		CopyMemory(pSendOverlappedEx->m_wsaBuf.buf, pMsg_, dataSize_);
+		pSendOverlappedEx->m_eOperation = IOOperation::SEND;
+
+		lock_guard<mutex> guard(m_SendLock);
+
+		m_SendDataQ.push(pSendOverlappedEx);
+
+		if (m_SendDataQ.size() == 1)
 		{
 			SendIO();
 		}
@@ -196,32 +211,30 @@ public:
 	{
 		printf("[송신 완료] bytes : %d\n", dataSize_);
 
-		std::lock_guard<std::mutex> guard(mSendLock);
+		lock_guard<mutex> guard(m_SendLock);
 
-		delete[] mSendDataqueue.front()->m_wsaBuf.buf;
-		delete mSendDataqueue.front();
+		m_SendDataPool.Return(m_SendDataQ.front());
+		m_SendDataQ.pop();
 
-		mSendDataqueue.pop();
-
-		if (mSendDataqueue.empty() == false)
+		if (!m_SendDataQ.empty())
 		{
 			SendIO();
 		}
 	}
 
-
 private:
 	bool SendIO()
 	{
-		auto sendOverlappedEx = mSendDataqueue.front();
+		auto sendOverlappedEx = m_SendDataQ.front();
 
 		DWORD dwRecvNumBytes = 0;
-		int nRet = WSASend(mSocket,
+		int nRet = WSASend(
+			mSocket,
 			&(sendOverlappedEx->m_wsaBuf),
 			1,
 			&dwRecvNumBytes,
 			0,
-			(LPWSAOVERLAPPED)sendOverlappedEx,
+			(LPWSAOVERLAPPED)sendOverlappedEx.get(),
 			NULL);
 
 		//socket_error이면 client socket이 끊어진걸로 처리한다.
@@ -274,8 +287,7 @@ private:
 	stOverlappedEx	mRecvOverlappedEx;	//RECV Overlapped I/O작업을 위한 변수	
 	char			mRecvBuf[MAX_SOCK_RECVBUF]; //데이터 버퍼
 
-	std::mutex mSendLock;
-	std::queue<stOverlappedEx*> mSendDataqueue;
-
-
+	mutex m_SendLock;
+	queue <shared_ptr< stOverlappedEx >> m_SendDataQ;
+	ObjPool<stOverlappedEx> m_SendDataPool;
 };

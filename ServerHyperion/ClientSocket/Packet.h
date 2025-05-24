@@ -36,6 +36,9 @@ class SERVERHYPERION_API Packet
 	*/
 
 public:
+	static UINT32 GetMaxPackByteSize();
+
+public:
 	Packet();
 	~Packet();
 
@@ -122,8 +125,7 @@ public:
 
 	inline UINT32 GetSize() { return m_BinDataSizeTmp; }
 
-private:
-	inline UINT32 // return byte
+	static inline UINT32 // return byte
 		GetSize(Header _InHeaderIdx)
 	{
 		switch (_InHeaderIdx)

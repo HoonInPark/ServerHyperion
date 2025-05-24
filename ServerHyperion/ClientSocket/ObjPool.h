@@ -1,5 +1,5 @@
 #pragma once
-/*
+
 #define SERVERHYPERION_EXPORT
 
 #ifdef SERVERHYPERION_EXPORT
@@ -7,7 +7,7 @@
 #else
 #define SERVERHYPERION_API __declspec(dllimport)
 #endif
-*/
+
 #include <iostream>
 #include <queue>
 #include <utility>

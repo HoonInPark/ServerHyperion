@@ -12,6 +12,8 @@
 
 using namespace std;
 
+#define PUBLIC_PACK_POOL_SIZE 300
+
 class ServerHyperion : public IOCPServer
 {
 public:
@@ -52,7 +54,7 @@ public:
 
 	void Run(const UINT32 maxClient)
 	{
-		m_pPackPool = new ObjPool<Packet>(60);
+		m_pPackPool = new ObjPool<Packet>(PUBLIC_PACK_POOL_SIZE);
 		m_pPackQ = new queue<shared_ptr< Packet >>();
 
 		mIsRunProcessThread = true;
@@ -87,6 +89,11 @@ private:
 		Packet CachePack;
 		shared_ptr<Packet> pPack = nullptr;
 
+#pragma region echo region
+		char* pStart = nullptr;
+		UINT8 Size;
+#pragma endregion
+
 		while (mIsRunProcessThread)
 		{
 			pPack = nullptr;
@@ -107,7 +114,20 @@ private:
 			m_pPackPool->Return(pPack);
 
 			m_Lock.unlock();
+			/*
+			printf("pos x : %f, pos y : %f, pos z : %f, rot x : %f, rot y : %f, rot z : %f",
+				CachePack.GetPosX(),
+				CachePack.GetPosY(),
+				CachePack.GetPosZ(),
+				CachePack.GetRotX(),
+				CachePack.GetRotY(),
+				CachePack.GetRotZ());
+			*/
 
+#pragma region echo region
+			Size = CachePack.Write(pStart);
+			SendMsg(CachePack.GetSessionIdx(), Size, pStart);
+#pragma endregion
 		}
 	}
 

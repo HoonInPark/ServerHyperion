@@ -255,7 +255,6 @@ private:
 				{
 					//클라이언트 갯수 증가
 					++mClientCnt;
-
 					OnConnect(pClientInfo->GetIndex());
 				}
 				else
@@ -268,15 +267,12 @@ private:
 			case IOOperation::RECV:
 			{
 				OnReceive(pClientInfo->GetIndex(), dwIoSize, pClientInfo->RecvBuffer());
-
 				pClientInfo->BindRecv();
-
 				break;
 			}
 			case IOOperation::SEND:
 			{
 				pClientInfo->SendCompleted(dwIoSize);
-
 				break;
 			}
 			default:

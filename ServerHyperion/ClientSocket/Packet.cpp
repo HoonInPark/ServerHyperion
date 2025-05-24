@@ -1,13 +1,19 @@
 #include "Packet.h"
 
-Packet::Packet()
+UINT32 Packet::GetMaxPackByteSize()
 {
 	UINT32 DataSize = 0;
-	DataSize += m_Header.size(); // Header size
+
+	DataSize += static_cast<int>(Header::MAX); // Header size
 	for (int i = 0; i < static_cast<int>(Header::MAX); ++i)
 		DataSize += GetSize(static_cast<Header>(i)); // add size of each value
 
-	m_pBinData = new char[DataSize];
+	return DataSize;
+}
+
+Packet::Packet()
+{
+	m_pBinData = new char[GetMaxPackByteSize()];
 }
 
 Packet::~Packet()
