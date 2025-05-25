@@ -28,14 +28,24 @@ enum class IOOperation
 //WSAOVERLAPPED구조체를 확장 시켜서 필요한 정보를 더 넣었다.
 struct stOverlappedEx
 {
-	//stOverlappedEx()
-	//{
-	//	Packet::GetMaxPackByteSize();
-	//}
+	stOverlappedEx()
+	{
+		m_wsaBuf.buf = new char[Packet::GetMaxPackByteSize()];
+		Init();
+	}
 
-	WSAOVERLAPPED m_wsaOverlapped;		//Overlapped I/O구조체
-	WSABUF		m_wsaBuf;				//Overlapped I/O작업 버퍼
-	IOOperation m_eOperation;			//작업 동작 종류
-	UINT32 SessionIndex = 0;
+	void Init() // for init after Acquired from obj pool
+	{
+		ZeroMemory(&m_wsaOverlapped, sizeof(WSAOVERLAPPED));
+		ZeroMemory(m_wsaBuf.buf, Packet::GetMaxPackByteSize());
+		m_wsaBuf.len = 0;
+		ZeroMemory(&m_eOperation, sizeof(IOOperation));
+		SessionIndex = 0;
+	}
+
+	WSAOVERLAPPED	m_wsaOverlapped;		//Overlapped I/O구조체
+	WSABUF			m_wsaBuf;				//Overlapped I/O작업 버퍼
+	IOOperation		m_eOperation;			//작업 동작 종류
+	UINT32			SessionIndex = 0;
 };
 
