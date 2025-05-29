@@ -23,6 +23,15 @@ public:
 	virtual void OnConnect(const UINT32 clientIndex_) override
 	{
 		printf("[OnConnect] 클라이언트: Index(%d)\n", clientIndex_);
+
+		auto pClient = GetClientInfo(clientIndex_);
+		/*
+		Packet PackTmp;
+		PackTmp.SetSessionIdx(clientIndex_);
+		char* pStart = nullptr;
+		UINT8 Size = PackTmp.Write(pStart);
+		SendMsg(clientIndex_, Size, pStart, IOOperation::INIT);
+		*/
 	}
 
 	virtual void OnClose(const UINT32 clientIndex_) override
@@ -89,10 +98,8 @@ private:
 		Packet CachePack;
 		shared_ptr<Packet> pPack = nullptr;
 
-#pragma region echo region
 		char* pStart = nullptr;
 		UINT8 Size;
-#pragma endregion
 
 		while (mIsRunProcessThread)
 		{
@@ -124,10 +131,16 @@ private:
 				CachePack.GetRotZ());
 			*/
 
-#pragma region echo region
 			Size = CachePack.Write(pStart);
-			SendMsg(CachePack.GetSessionIdx(), Size, pStart);
-#pragma endregion
+
+			for (auto cli : mClientInfos)
+			{
+				if (cli->IsConnected() == false) continue;
+				if (cli->GetIndex() == CachePack.GetSessionIdx())
+				{
+					SendMsg(CachePack.GetSessionIdx(), Size, pStart);
+				}
+			}
 		}
 	}
 

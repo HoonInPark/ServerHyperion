@@ -139,10 +139,10 @@ public:
 		}
 	}
 
-	bool SendMsg(const UINT32 sessionIndex_, const UINT32 dataSize_, char* pData)
+	bool SendMsg(const UINT32 sessionIndex_, const UINT32 dataSize_, char* pData, IOOperation _InSendType = IOOperation::SEND)
 	{
 		auto pClient = GetClientInfo(sessionIndex_);
-		return pClient->SendMsg(dataSize_, pData);
+		return pClient->SendMsg(dataSize_, pData, _InSendType);
 	}
 
 	virtual void OnConnect(const UINT32 clientIndex_) {}
@@ -187,11 +187,6 @@ private:
 		}
 
 		return nullptr;
-	}
-
-	stClientInfo* GetClientInfo(const UINT32 sessionIndex)
-	{
-		return mClientInfos[sessionIndex];
 	}
 
 	//accept요청을 처리하는 쓰레드 생성
@@ -324,10 +319,14 @@ private:
 		OnClose(clientIndex);
 	}
 
-	UINT32 MaxIOWorkerThreadCount{ 0 };
+protected:
+	stClientInfo* GetClientInfo(const UINT32 sessionIndex)
+	{
+		return mClientInfos[sessionIndex];
+	}
 
-	//클라이언트 정보 저장 구조체
-	std::vector<stClientInfo*> mClientInfos;
+
+	UINT32 MaxIOWorkerThreadCount{ 0 };
 
 	//클라이언트의 접속을 받기위한 리슨 소켓
 	SOCKET		mListenSocket{ INVALID_SOCKET };
@@ -349,4 +348,8 @@ private:
 
 	//접속 쓰레드 동작 플래그
 	bool		mIsAccepterRun{ true };
+
+protected:
+	//클라이언트 정보 저장 구조체
+	std::vector<stClientInfo*> mClientInfos;
 };

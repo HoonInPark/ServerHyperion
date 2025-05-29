@@ -20,6 +20,7 @@ const UINT64 RE_USE_SESSION_WAIT_TIMESEC = 3;
 
 enum class IOOperation
 {
+	INIT,
 	ACCEPT,
 	RECV,
 	SEND

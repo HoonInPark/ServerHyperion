@@ -175,7 +175,7 @@ public:
 
 	// 1개의 스레드에서만 호출해야 한다!
 	// obj pooling must be implemented
-	bool SendMsg(const UINT32 _InSize, char* _pInMsg)
+	bool SendMsg(const UINT32 _InSize, char* _pInMsg, IOOperation _InSendType = IOOperation::SEND)
 	{
 		m_SendLock.lock();
 
@@ -198,7 +198,7 @@ public:
 		pSendOverlappedEx->Init();
 		pSendOverlappedEx->m_wsaBuf.len = _InSize;
 		CopyMemory(pSendOverlappedEx->m_wsaBuf.buf, _pInMsg, _InSize);
-		pSendOverlappedEx->m_eOperation = IOOperation::SEND;
+		pSendOverlappedEx->m_eOperation = _InSendType;
 
 		lock_guard<mutex> guard(m_SendLock);
 
