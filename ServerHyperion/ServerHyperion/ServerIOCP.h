@@ -139,10 +139,10 @@ public:
 		}
 	}
 
-	bool SendMsg(const UINT32 sessionIndex_, const UINT32 dataSize_, char* pData, IOOperation _InSendType = IOOperation::SEND)
+	bool SendMsg(const UINT32 sessionIndex_, const UINT32 dataSize_, char* pData)
 	{
 		auto pClient = GetClientInfo(sessionIndex_);
-		return pClient->SendMsg(dataSize_, pData, _InSendType);
+		return pClient->SendMsg(dataSize_, pData);
 	}
 
 	virtual void OnConnect(const UINT32 clientIndex_) {}

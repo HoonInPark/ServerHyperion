@@ -24,8 +24,8 @@ public:
 	{
 		printf("[OnConnect] 클라이언트: Index(%d)\n", clientIndex_);
 
-		auto pClient = GetClientInfo(clientIndex_);
 		/*
+		auto pClient = GetClientInfo(clientIndex_);
 		Packet PackTmp;
 		PackTmp.SetSessionIdx(clientIndex_);
 		char* pStart = nullptr;
@@ -53,6 +53,8 @@ public:
 		if (pPack->Read(pData_, size_))
 		{
 			//printf("[OnReceive] 클라이언트: Index(%d), dataSize(%d)\n", clientIndex_, size_);
+
+			pPack->SetSessionIdx(clientIndex_); // temporary line before session idx is saved in client side code
 
 			m_pPackQ->push(pPack);
 		}
@@ -131,8 +133,7 @@ private:
 				CachePack.GetRotZ());
 			*/
 
-			Size = CachePack.Write(pStart);
-
+			/*
 			for (auto cli : mClientInfos)
 			{
 				if (cli->IsConnected() == false) continue;
@@ -141,6 +142,13 @@ private:
 					SendMsg(CachePack.GetSessionIdx(), Size, pStart);
 				}
 			}
+			*/
+
+#pragma region echo region
+			Size = CachePack.Write(pStart);
+			SendMsg(CachePack.GetSessionIdx(), Size, pStart);
+#pragma endregion
+
 		}
 	}
 
