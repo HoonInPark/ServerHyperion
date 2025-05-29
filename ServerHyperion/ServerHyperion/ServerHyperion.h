@@ -14,6 +14,8 @@ using namespace std;
 
 #define PUBLIC_PACK_POOL_SIZE 300
 
+#define SET_SESS_IDX_IN_SERVER_RECV 1
+
 class ServerHyperion : public IOCPServer
 {
 public:
@@ -24,14 +26,14 @@ public:
 	{
 		printf("[OnConnect] 클라이언트: Index(%d)\n", clientIndex_);
 
-		/*
+#if !SET_SESS_IDX_IN_SERVER_RECV
 		auto pClient = GetClientInfo(clientIndex_);
 		Packet PackTmp;
 		PackTmp.SetSessionIdx(clientIndex_);
 		char* pStart = nullptr;
 		UINT8 Size = PackTmp.Write(pStart);
 		SendMsg(clientIndex_, Size, pStart, IOOperation::INIT);
-		*/
+#endif
 	}
 
 	virtual void OnClose(const UINT32 clientIndex_) override
@@ -54,8 +56,9 @@ public:
 		{
 			//printf("[OnReceive] 클라이언트: Index(%d), dataSize(%d)\n", clientIndex_, size_);
 
+#if SET_SESS_IDX_IN_SERVER_RECV
 			pPack->SetSessionIdx(clientIndex_); // temporary line before session idx is saved in client side code
-
+#endif
 			m_pPackQ->push(pPack);
 		}
 		else printf("[OnReceive] Read Bin Data Failed");
@@ -133,7 +136,8 @@ private:
 				CachePack.GetRotZ());
 			*/
 
-			/*
+			Size = CachePack.Write(pStart);
+
 			for (auto cli : mClientInfos)
 			{
 				if (cli->IsConnected() == false) continue;
@@ -142,12 +146,13 @@ private:
 					SendMsg(CachePack.GetSessionIdx(), Size, pStart);
 				}
 			}
-			*/
 
+			/*
 #pragma region echo region
 			Size = CachePack.Write(pStart);
 			SendMsg(CachePack.GetSessionIdx(), Size, pStart);
 #pragma endregion
+			*/
 
 		}
 	}
