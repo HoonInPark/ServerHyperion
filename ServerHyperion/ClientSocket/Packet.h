@@ -18,6 +18,8 @@
 
 using namespace std;
 
+enum class MsgType;
+
 class SERVERHYPERION_API Packet
 {
 	/*
@@ -44,7 +46,9 @@ public:
 
 	enum class Header : char
 	{
-		SESSION_IDX = 0,
+		MSG_TYPE = 0,
+
+		SESSION_IDX,
 
 		POS_X,
 		POS_Y,
@@ -58,6 +62,12 @@ public:
 
 		MAX
 	};
+
+	inline void SetMsgType(MsgType _InMsgType)
+	{
+		m_MsgType = _InMsgType;
+		m_Header[static_cast<int>(Header::MSG_TYPE)] = true;
+	}
 
 	inline void SetSessionIdx(UINT32 _InSessionIdx)
 	{
@@ -114,6 +124,7 @@ public:
 
 	inline const vector<bool>& GetHeader() { return m_Header; }
 
+	inline MsgType GetMsgType() const { return m_MsgType; }
 	inline UINT32 GetSessionIdx() const { return m_SessionIdx; }
 	inline double GetPosX() const { return m_PosX; }
 	inline double GetPosY() const { return m_PosY; }
@@ -130,6 +141,9 @@ public:
 	{
 		switch (_InHeaderIdx)
 		{
+		case Header::MSG_TYPE:
+			return sizeof(char);
+
 		case Header::SESSION_IDX:
 			return sizeof(UINT32);
 
@@ -156,6 +170,8 @@ public:
 	}
 
 private:
+	MsgType m_MsgType;
+
 	vector<bool> m_Header{ vector<bool>(static_cast<int>(Header::MAX), false) };
 
 	UINT32 m_SessionIdx{ 0 };

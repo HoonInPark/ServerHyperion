@@ -25,11 +25,11 @@ public:
 		mIOCPHandle = iocpHandle_;
 	}
 
-	UINT32 GetIndex() { return mIndex; }
-	bool IsConnected() { return mIsConnect == 1; }
-	SOCKET GetSock() { return mSocket; }
-	UINT64 GetLatestClosedTimeSec() { return mLatestClosedTimeSec; }
-	char* RecvBuffer() { return mRecvBuf; }
+	inline UINT32 GetIndex() { return mIndex; }
+	inline bool IsConnected() { return mIsConnect == 1; }
+	inline SOCKET GetSock() { return mSocket; }
+	inline UINT64 GetLatestClosedTimeSec() { return mLatestClosedTimeSec; }
+	inline char* RecvBuffer() { return mRecvBuf; }
 
 	bool OnConnect(HANDLE iocpHandle_, SOCKET socket_)
 	{
@@ -94,7 +94,7 @@ public:
 		DWORD flags = 0;
 		mAcceptContext.m_wsaBuf.len = 0;
 		mAcceptContext.m_wsaBuf.buf = nullptr;
-		mAcceptContext.m_eOperation = IOOperation::ACCEPT;
+		mAcceptContext.m_eOperation = IOOperation::IO_ACCEPT;
 		mAcceptContext.SessionIndex = mIndex;
 
 		if (FALSE == AcceptEx(listenSock_, mSocket, mAcceptBuf, 0,
@@ -152,7 +152,7 @@ public:
 		//Overlapped I/O을 위해 각 정보를 셋팅해 준다.
 		mRecvOverlappedEx.m_wsaBuf.len = MAX_SOCK_RECVBUF;
 		mRecvOverlappedEx.m_wsaBuf.buf = mRecvBuf;
-		mRecvOverlappedEx.m_eOperation = IOOperation::RECV;
+		mRecvOverlappedEx.m_eOperation = IOOperation::IO_RECV;
 
 		int nRet = WSARecv(
 			mSocket,
@@ -173,9 +173,9 @@ public:
 		return true;
 	}
 
-	// 1개의 스레드에서만 호출해야 한다!
+	// 1개의 스레드에서만 호출해야 한다! 
 	// obj pooling must be implemented
-	bool SendMsg(const UINT32 _InSize, char* _pInMsg, IOOperation _InIoOper = IOOperation::SEND)
+	bool SendMsg(const UINT32 _InSize, char* _pInMsg)
 	{
 		m_SendLock.lock();
 
@@ -192,7 +192,7 @@ public:
 		pSendOverlappedEx->Init();
 		pSendOverlappedEx->m_wsaBuf.len = _InSize;
 		CopyMemory(pSendOverlappedEx->m_wsaBuf.buf, _pInMsg, _InSize);
-		pSendOverlappedEx->m_eOperation = _InIoOper;
+		pSendOverlappedEx->m_eOperation = IOOperation::IO_SEND;
 
 		lock_guard<mutex> guard(m_SendLock);
 
@@ -283,7 +283,7 @@ private:
 	stOverlappedEx	mAcceptContext;
 	char mAcceptBuf[64];
 
-	stOverlappedEx	mRecvOverlappedEx;	//RECV Overlapped I/O작업을 위한 변수	
+	stOverlappedEx	mRecvOverlappedEx;	//IO_RECV Overlapped I/O작업을 위한 변수	
 	char			mRecvBuf[MAX_SOCK_RECVBUF]; //데이터 버퍼
 
 	mutex m_SendLock;

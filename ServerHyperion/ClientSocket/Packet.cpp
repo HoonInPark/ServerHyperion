@@ -1,5 +1,7 @@
 #include "Packet.h"
 
+#include "Define.h"
+
 UINT32 Packet::GetMaxPackByteSize()
 {
 	UINT32 DataSize = 0;
@@ -39,13 +41,22 @@ UINT32 Packet::Write(char*& _pOutStartPt)
 		WriteIdx++;
 	}
 
-	// write value
+	// write body
 	for (int i = 0; i < static_cast<int>(Header::MAX); ++i)
 	{
 		if (!m_Header[i]) continue;
 
 		switch (static_cast<Header>(i))
 		{
+		case Header::MSG_TYPE:
+		{
+			char MsgTypeVal = static_cast<char>(m_MsgType);
+
+			CopyMemory(_pOutStartPt + WriteIdx, &MsgTypeVal, sizeof(char));
+			WriteIdx++;
+			break;
+		}
+
 		case Header::SESSION_IDX:
 		{
 			CopyMemory(_pOutStartPt + WriteIdx, &m_SessionIdx, sizeof(UINT32));
@@ -103,7 +114,7 @@ UINT32 Packet::Write(char*& _pOutStartPt)
 		}
 	}
 
-	fill(m_Header.begin(), m_Header.end(), false);
+	//fill(m_Header.begin(), m_Header.end(), false); // reset header is enough only in Read func
 
 	return WriteIdx;
 }
@@ -124,6 +135,15 @@ bool Packet::Read(char* _pInStartPt, const UINT32 _InSize)
 
 		switch (static_cast<Header>(i))
 		{
+		case Header::MSG_TYPE:
+		{
+			char MsgTypeVal = 0;
+			CopyMemory(&MsgTypeVal, _pInStartPt + ReadIdx, sizeof(char));
+			ReadIdx++;
+			m_MsgType = static_cast<MsgType>(MsgTypeVal);
+			break;
+		}
+
 		case Header::SESSION_IDX:
 		{
 			CopyMemory(&m_SessionIdx, _pInStartPt + ReadIdx, sizeof(UINT32));
@@ -194,6 +214,9 @@ bool Packet::CacheWrite(shared_ptr<Packet> _InPack)
 
 		switch (static_cast<Header>(i))
 		{
+		case Header::MSG_TYPE:
+			m_MsgType = _InPack->GetMsgType();
+			break;
 		case Header::SESSION_IDX:
 			m_SessionIdx = _InPack->GetSessionIdx();
 			break;

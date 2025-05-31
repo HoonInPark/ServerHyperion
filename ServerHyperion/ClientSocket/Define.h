@@ -20,10 +20,19 @@ const UINT64 RE_USE_SESSION_WAIT_TIMESEC = 3;
 
 enum class IOOperation
 {
-	INIT,
-	ACCEPT,
-	RECV,
-	SEND
+	IO_ACCEPT,
+	IO_RECV,
+	IO_SEND
+};
+
+enum class MsgType
+{
+	MSG_NONE = 0,
+	
+	MSG_INIT,
+	MSG_GAME,
+
+	MSG_MAX
 };
 
 //WSAOVERLAPPED구조체를 확장 시켜서 필요한 정보를 더 넣었다.

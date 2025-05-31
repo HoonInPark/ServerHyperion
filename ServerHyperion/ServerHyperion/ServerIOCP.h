@@ -139,10 +139,10 @@ public:
 		}
 	}
 
-	bool SendMsg(const UINT32 sessionIndex_, const UINT32 _InDataSize, char* _pInData, IOOperation _InIoOper = IOOperation::SEND)
+	bool SendMsg(const UINT32 sessionIndex_, const UINT32 _InDataSize, char* _pInData)
 	{
 		auto pClient = GetClientInfo(sessionIndex_);
-		return pClient->SendMsg(_InDataSize, _pInData, _InIoOper);
+		return pClient->SendMsg(_InDataSize, _pInData);
 	}
 
 	virtual void OnConnect(const UINT32 clientIndex_) {}
@@ -234,7 +234,7 @@ private:
 			auto pOverlappedEx = (stOverlappedEx*)lpOverlapped;
 
 			//client°¡ Á¢¼ÓÀ» ²÷¾úÀ»¶§..
-			if (FALSE == bSuccess || (0 == dwIoSize && IOOperation::ACCEPT != pOverlappedEx->m_eOperation))
+			if (FALSE == bSuccess || (0 == dwIoSize && IOOperation::IO_ACCEPT != pOverlappedEx->m_eOperation))
 			{
 				//printf("socket(%d) Á¢¼Ó ²÷±è\n", (int)pClientInfo->m_socketClient);
 				CloseSocket(pClientInfo);
@@ -243,7 +243,7 @@ private:
 
 			switch (pOverlappedEx->m_eOperation)
 			{
-			case IOOperation::ACCEPT:
+			case IOOperation::IO_ACCEPT:
 			{
 				pClientInfo = GetClientInfo(pOverlappedEx->SessionIndex);
 				if (pClientInfo->AcceptCompletion())
@@ -259,13 +259,13 @@ private:
 
 				break;
 			}
-			case IOOperation::RECV:
+			case IOOperation::IO_RECV:
 			{
 				OnReceive(pClientInfo->GetIndex(), dwIoSize, pClientInfo->RecvBuffer());
 				pClientInfo->BindRecv();
 				break;
 			}
-			case IOOperation::SEND:
+			case IOOperation::IO_SEND:
 			{
 				pClientInfo->SendCompleted(dwIoSize);
 				break;

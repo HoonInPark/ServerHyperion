@@ -14,7 +14,7 @@ using namespace std;
 
 #define PUBLIC_PACK_POOL_SIZE 300
 
-#define SET_SESS_IDX_IN_SERVER_RECV 1
+#define SET_SESS_IDX_WHEN_SERVER_RECV 1
 
 class ServerHyperion : public IOCPServer
 {
@@ -26,13 +26,14 @@ public:
 	{
 		printf("[OnConnect] 클라이언트: Index(%d)\n", clientIndex_);
 
-#if !SET_SESS_IDX_IN_SERVER_RECV
-		auto pClient = GetClientInfo(clientIndex_);
+#if !SET_SESS_IDX_WHEN_SERVER_RECV
 		Packet PackTmp;
 		PackTmp.SetSessionIdx(clientIndex_);
+
 		char* pStart = nullptr;
 		UINT8 Size = PackTmp.Write(pStart);
-		SendMsg(clientIndex_, Size, pStart, IOOperation::INIT);
+		
+		
 #endif
 	}
 
@@ -56,7 +57,7 @@ public:
 		{
 			//printf("[OnReceive] 클라이언트: Index(%d), dataSize(%d)\n", clientIndex_, size_);
 
-#if SET_SESS_IDX_IN_SERVER_RECV
+#if SET_SESS_IDX_WHEN_SERVER_RECV
 			pPack->SetSessionIdx(clientIndex_); // temporary line before session idx is saved in client side code
 #endif
 			m_pPackQ->push(pPack);
@@ -126,15 +127,6 @@ private:
 			m_pPackPool->Return(pPack);
 
 			m_Lock.unlock();
-			/*
-			printf("pos x : %f, pos y : %f, pos z : %f, rot x : %f, rot y : %f, rot z : %f",
-				CachePack.GetPosX(),
-				CachePack.GetPosY(),
-				CachePack.GetPosZ(),
-				CachePack.GetRotX(),
-				CachePack.GetRotY(),
-				CachePack.GetRotZ());
-			*/
 
 			Size = CachePack.Write(pStart);
 
@@ -153,7 +145,6 @@ private:
 			SendMsg(CachePack.GetSessionIdx(), Size, pStart);
 #pragma endregion
 			*/
-
 		}
 	}
 
