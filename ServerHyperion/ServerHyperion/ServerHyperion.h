@@ -14,8 +14,6 @@ using namespace std;
 
 #define PUBLIC_PACK_POOL_SIZE 300
 
-#define SET_SESS_IDX_WHEN_SERVER_RECV 1
-
 class ServerHyperion : public IOCPServer
 {
 public:
@@ -26,15 +24,22 @@ public:
 	{
 		printf("[OnConnect] 클라이언트: Index(%d)\n", clientIndex_);
 
-#if !SET_SESS_IDX_WHEN_SERVER_RECV
-		Packet PackTmp;
-		PackTmp.SetSessionIdx(clientIndex_);
+		// send init packet to client
+		m_Lock.lock();
 
-		char* pStart = nullptr;
-		UINT8 Size = PackTmp.Write(pStart);
-		
-		
-#endif
+		shared_ptr<Packet> pPack = m_pPackPool->Acquire();
+		if (!pPack)
+		{
+			m_Lock.unlock();
+			return;
+		}
+
+		pPack->SetMsgType(MsgType::MSG_INIT);
+		pPack->SetSessionIdx(clientIndex_);
+
+		m_pPackQ->push(pPack);
+
+		m_Lock.unlock();
 	}
 
 	virtual void OnClose(const UINT32 clientIndex_) override
@@ -57,9 +62,6 @@ public:
 		{
 			//printf("[OnReceive] 클라이언트: Index(%d), dataSize(%d)\n", clientIndex_, size_);
 
-#if SET_SESS_IDX_WHEN_SERVER_RECV
-			pPack->SetSessionIdx(clientIndex_); // temporary line before session idx is saved in client side code
-#endif
 			m_pPackQ->push(pPack);
 		}
 		else printf("[OnReceive] Read Bin Data Failed");
@@ -130,12 +132,18 @@ private:
 
 			Size = CachePack.Write(pStart);
 
-			for (auto cli : mClientInfos)
+			if (MsgType::MSG_INIT == CachePack.GetMsgType())
 			{
-				if (cli->IsConnected() == false) continue;
-				if (cli->GetIndex() == CachePack.GetSessionIdx())
+				SendMsg(CachePack.GetSessionIdx(), Size, pStart);
+				continue;
+			}
+
+			for (int i = 0; i < m_ClientInfos.size(); i++)
+			{
+				if (0 == m_ClientInfos[i]->IsInited()) continue; // if IsInited is 0, also IsConnected is 0, so skip
+				if (CachePack.GetSessionIdx() != i)
 				{
-					SendMsg(CachePack.GetSessionIdx(), Size, pStart);
+					SendMsg(i, Size, pStart);
 				}
 			}
 

@@ -26,7 +26,8 @@ public:
 	}
 
 	inline UINT32 GetIndex() { return mIndex; }
-	inline bool IsConnected() { return mIsConnect == 1; }
+	inline bool IsConnected() { return m_IsConnected == 1; }
+	inline bool IsInited() { return m_IsInited == 1; }
 	inline SOCKET GetSock() { return mSocket; }
 	inline UINT64 GetLatestClosedTimeSec() { return mLatestClosedTimeSec; }
 	inline char* RecvBuffer() { return mRecvBuf; }
@@ -34,7 +35,7 @@ public:
 	bool OnConnect(HANDLE iocpHandle_, SOCKET socket_)
 	{
 		mSocket = socket_;
-		mIsConnect = 1;
+		m_IsConnected = 1;
 
 		Clear();
 
@@ -63,7 +64,7 @@ public:
 		//소켓 옵션을 설정한다.
 		setsockopt(mSocket, SOL_SOCKET, SO_LINGER, (char*)&stLinger, sizeof(stLinger));
 
-		mIsConnect = 0;
+		m_IsConnected = 0;
 		mLatestClosedTimeSec = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 		//소켓 연결을 종료 시킨다.
 		closesocket(mSocket);
@@ -212,7 +213,15 @@ public:
 
 		lock_guard<mutex> guard(m_SendLock);
 
-		m_SendDataPool.Return(m_SendDataQ.front());
+		shared_ptr<stOverlappedEx> pSendOverlappedEx = m_SendDataQ.front();
+
+		if (MsgType::MSG_INIT == static_cast<MsgType>(pSendOverlappedEx->m_wsaBuf.buf[0]));
+		{
+			printf("[초기화 완료] MSG_INIT\n");
+			m_IsInited = 1; // set initialized
+		}
+
+		m_SendDataPool.Return(pSendOverlappedEx);
 		m_SendDataQ.pop();
 
 		if (!m_SendDataQ.empty())
@@ -271,11 +280,13 @@ private:
 		return true;
 	}
 
-
+private:
 	INT32 mIndex = 0;
 	HANDLE mIOCPHandle = INVALID_HANDLE_VALUE;
 
-	INT64 mIsConnect = 0;
+	INT64 m_IsConnected = 0;
+	atomic<INT64> m_IsInited = 0; // 0: not initialized, 1: initialized
+
 	UINT64 mLatestClosedTimeSec = 0;
 
 	SOCKET			mSocket;			//Cliet와 연결되는 소켓

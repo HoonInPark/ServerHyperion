@@ -46,7 +46,7 @@ public:
 
 	enum class Header : char
 	{
-		MSG_TYPE = 0,
+		MSG_TYPE = 0, // CAUTIOIN: its idx must be 0 'cause of in other class it assumes that the first byte is MsgType
 
 		SESSION_IDX,
 

@@ -157,7 +157,7 @@ private:
 			auto client = new stClientInfo;
 			client->Init(i, mIOCPHandle);
 
-			mClientInfos.push_back(client);
+			m_ClientInfos.push_back(client);
 		}
 	}
 
@@ -178,7 +178,7 @@ private:
 	//사용하지 않는 클라이언트 정보 구조체를 반환한다.
 	stClientInfo* GetEmptyClientInfo()
 	{
-		for (auto& client : mClientInfos)
+		for (auto& client : m_ClientInfos)
 		{
 			if (client->IsConnected() == false)
 			{
@@ -284,7 +284,7 @@ private:
 		{
 			auto curTimeSec = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 
-			for (auto client : mClientInfos)
+			for (auto client : m_ClientInfos)
 			{
 				if (client->IsConnected())
 				{
@@ -322,7 +322,7 @@ private:
 protected:
 	stClientInfo* GetClientInfo(const UINT32 sessionIndex)
 	{
-		return mClientInfos[sessionIndex];
+		return m_ClientInfos[sessionIndex];
 	}
 
 
@@ -351,5 +351,5 @@ protected:
 
 protected:
 	//클라이언트 정보 저장 구조체
-	std::vector<stClientInfo*> mClientInfos;
+	std::vector<stClientInfo*> m_ClientInfos;
 };
