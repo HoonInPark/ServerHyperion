@@ -44,17 +44,18 @@ public:
 
 	virtual void OnClose(const UINT32 clientIndex_) override
 	{
-		printf("[OnClose] 클라이언트: Index(%d)\n", clientIndex_);
+		printf("[OnClose] : Index(%d)\n", clientIndex_);
 	}
 
 	virtual void OnReceive(const UINT32 clientIndex_, const UINT32 size_, char* pData_) override
 	{
-		shared_ptr<Packet> pPack = m_pPackPool->Acquire();
-
 		m_Lock.lock();
+
+		shared_ptr<Packet> pPack = m_pPackPool->Acquire();
 		if (!pPack)
 		{
 			m_Lock.unlock();
+			printf("[OnReceive] : PackPool Error");
 			return;
 		}
 

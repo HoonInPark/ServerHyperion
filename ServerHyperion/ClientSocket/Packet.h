@@ -44,7 +44,7 @@ public:
 	Packet();
 	~Packet();
 
-	enum class Header : char
+	static enum class Header : char
 	{
 		MSG_TYPE = 0, // CAUTIOIN: its idx must be 0 'cause of in other class it assumes that the first byte is MsgType
 
@@ -170,10 +170,10 @@ public:
 	}
 
 private:
-	MsgType m_MsgType;
 
 	vector<bool> m_Header{ vector<bool>(static_cast<int>(Header::MAX), false) };
 
+	MsgType m_MsgType;
 	UINT32 m_SessionIdx{ 0 };
 
 	double m_PosX{ 0.f };

@@ -215,10 +215,28 @@ public:
 
 		shared_ptr<stOverlappedEx> pSendOverlappedEx = m_SendDataQ.front();
 
-		if (MsgType::MSG_INIT == static_cast<MsgType>(pSendOverlappedEx->m_wsaBuf.buf[0]));
+		char MsgTypeInBuff = pSendOverlappedEx->m_wsaBuf.buf[static_cast<int>(Packet::Header::MAX)];
+		switch (static_cast<MsgType>(MsgTypeInBuff))
 		{
-			printf("[초기화 완료] MSG_INIT\n");
+		case MsgType::MSG_NONE:
+		{
+			printf("[SendCompleted] : Error\n");
+
+			break;
+		}
+		case MsgType::MSG_INIT:
+		{
+			printf("[SendCompleted()] MSG_INIT\n");
 			m_IsInited = 1; // set initialized
+
+			break;
+		}
+		case MsgType::MSG_GAME:
+		{
+			break;
+		}
+		default:
+			break;
 		}
 
 		m_SendDataPool.Return(pSendOverlappedEx);
