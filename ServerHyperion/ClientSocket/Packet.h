@@ -120,7 +120,7 @@ public:
 	UINT32 Write(char*& _pOutStartPt);
 	bool Read(char* _pInStartPt, const UINT32 _InSize);
 
-	bool CacheWrite(shared_ptr<Packet> _InPack);
+	//bool CacheWrite(shared_ptr<Packet> _InPack);
 
 	inline const vector<bool>& GetHeader() { return m_Header; }
 
@@ -170,7 +170,6 @@ public:
 	}
 
 private:
-
 	vector<bool> m_Header{ vector<bool>(static_cast<int>(Header::MAX), false) };
 
 	MsgType m_MsgType;

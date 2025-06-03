@@ -104,7 +104,6 @@ public:
 private:
 	void ProcPack()
 	{
-		Packet CachePack;
 		shared_ptr<Packet> pPack = nullptr;
 
 		char* pStart = nullptr;
@@ -112,7 +111,6 @@ private:
 
 		while (mIsRunProcessThread)
 		{
-			pPack = nullptr;
 			m_Lock.lock();
 
 			if (m_pPackQ->empty())
@@ -124,36 +122,31 @@ private:
 			}
 
 			pPack = m_pPackQ->front();
-			CachePack.CacheWrite(pPack);
+
 			m_pPackQ->pop();
 
-			m_pPackPool->Return(pPack);
-
-			m_Lock.unlock();
-
-			Size = CachePack.Write(pStart);
-
-			if (MsgType::MSG_INIT == CachePack.GetMsgType())
+			Size = pPack->Write(pStart);
+			
+			if (MsgType::MSG_INIT == pPack->GetMsgType())
 			{
-				SendMsg(CachePack.GetSessionIdx(), Size, pStart);
+				SendMsg(pPack->GetSessionIdx(), Size, pStart);
+
+				m_Lock.unlock();
 				continue;
 			}
 
 			for (int i = 0; i < m_ClientInfos.size(); i++)
 			{
 				if (0 == m_ClientInfos[i]->IsInited()) continue; // if IsInited is 0, also IsConnected is 0, so skip
-				if (CachePack.GetSessionIdx() != i)
+				if (pPack->GetSessionIdx() != i)
 				{
 					SendMsg(i, Size, pStart);
 				}
 			}
 
-			/*
-#pragma region echo region
-			Size = CachePack.Write(pStart);
-			SendMsg(CachePack.GetSessionIdx(), Size, pStart);
-#pragma endregion
-			*/
+			m_pPackPool->Return(pPack);
+
+			m_Lock.unlock();
 		}
 	}
 

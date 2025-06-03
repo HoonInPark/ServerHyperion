@@ -114,7 +114,7 @@ UINT32 Packet::Write(char*& _pOutStartPt)
 		}
 	}
 
-	//fill(m_Header.begin(), m_Header.end(), false); // reset header is enough only in Read func
+	fill(m_Header.begin(), m_Header.end(), false); // reset header is enough only in Read func
 
 	return WriteIdx;
 }
@@ -203,6 +203,7 @@ bool Packet::Read(char* _pInStartPt, const UINT32 _InSize)
 	return true;
 }
 
+/*
 bool Packet::CacheWrite(shared_ptr<Packet> _InPack)
 {
 	if (_InPack.get() == this) return false;
@@ -248,3 +249,4 @@ bool Packet::CacheWrite(shared_ptr<Packet> _InPack)
 
 	return true;
 }
+*/
