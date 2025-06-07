@@ -42,7 +42,11 @@ public:
 
 public:
 	Packet();
+	Packet(const Packet& Other); // TODO : must be modified with mem pooling 'cause it dynamically alloc when copy constructor called
+
 	~Packet();
+
+	Packet& operator=(const Packet& Other); 
 
 	static enum class Header : char
 	{
@@ -62,40 +66,7 @@ public:
 
 		MAX
 	};
-
-	Packet& operator=(const Packet& Other)
-	{
-		if (this == &Other)
-			return *this;  // 자기 자신 보호
-
-		// 헤더 복사
-		m_Header = Other.m_Header;
-
-		// 값 복사
-		m_SessionIdx = Other.m_SessionIdx;
-
-		m_PosX = Other.m_PosX;
-		m_PosY = Other.m_PosY;
-		m_PosZ = Other.m_PosZ;
-
-		m_RotX = Other.m_RotX;
-		m_RotY = Other.m_RotY;
-		m_RotZ = Other.m_RotZ;
-
-		m_bIsJumping = Other.m_bIsJumping;
-
-		/*
-		m_BinDataSizeTmp = Other.m_BinDataSizeTmp;
-
-		if (Other.m_pBinData && Other.m_BinDataSizeTmp > 0)
-		{
-			memcpy(m_pBinData, Other.m_pBinData, m_BinDataSizeTmp);
-		}
-		*/
-
-		return *this;
-	}
-
+		
 	inline void SetMsgType(MsgType _InMsgType)
 	{
 		m_MsgType = _InMsgType;
@@ -122,7 +93,7 @@ public:
 	{
 		m_PosZ = _InPosZ;
 		m_Header[static_cast<int>(Header::POS_Z)] = true;
-	}
+	}	
 
 	inline void SetRotPitch(double _InRotX)
 	{

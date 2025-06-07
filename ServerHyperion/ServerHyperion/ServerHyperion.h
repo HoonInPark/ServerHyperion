@@ -31,6 +31,7 @@ public:
 		if (!pPack)
 		{
 			m_Lock.unlock();
+			printf("[OnConnect] : PackPool Error");
 			return;
 		}
 
@@ -62,7 +63,6 @@ public:
 		if (pPack->Read(pData_, size_))
 		{
 			//printf("[OnReceive] 클라이언트: Index(%d), dataSize(%d)\n", clientIndex_, size_);
-
 			m_pPackQ->push(pPack);
 		}
 		else printf("[OnReceive] Read Bin Data Failed");
@@ -122,31 +122,47 @@ private:
 			}
 
 			pPack = m_pPackQ->front();
-
 			m_pPackQ->pop();
 
 			Size = pPack->Write(pStart);
-			
-			if (MsgType::MSG_INIT == pPack->GetMsgType())
-			{
-				SendMsg(pPack->GetSessionIdx(), Size, pStart);
 
+			switch (pPack->GetMsgType())
+			{
+			case MsgType::MSG_INIT:
+			{
+				for (int i = 0; i < m_ClientInfos.size(); ++i)
+				{
+					if (0 == m_ClientInfos[i]->IsConnected()) continue; // if IsInited is 0, also IsConnected is 0, so skip
+					SendMsg(i, Size, pStart);
+				}
+
+				m_pPackPool->Return(pPack);
 				m_Lock.unlock();
 				continue;
 			}
-
-			for (int i = 0; i < m_ClientInfos.size(); i++)
+			case MsgType::MSG_GAME:
 			{
-				if (0 == m_ClientInfos[i]->IsInited()) continue; // if IsInited is 0, also IsConnected is 0, so skip
-				if (pPack->GetSessionIdx() != i)
+				for (int i = 0; i < m_ClientInfos.size(); ++i)
 				{
-					SendMsg(i, Size, pStart);
+					if (0 == m_ClientInfos[i]->IsInited()) continue; // if IsInited is 0, also IsConnected is 0, so skip
+					if (pPack->GetSessionIdx() != i)
+					{
+						SendMsg(i, Size, pStart);
+					}
 				}
+
+				m_pPackPool->Return(pPack);
+				m_Lock.unlock();
+
+				continue;
 			}
-
-			m_pPackPool->Return(pPack);
-
-			m_Lock.unlock();
+			default:
+			{
+				m_Lock.unlock();
+				printf("[ProcPack] unknown msg type ERROR!!!");
+				break;
+			}
+			}
 		}
 	}
 

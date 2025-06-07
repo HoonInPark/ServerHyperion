@@ -1,4 +1,4 @@
-#include "Packet.h"
+﻿#include "Packet.h"
 
 #include "Define.h"
 
@@ -25,6 +25,60 @@ Packet::~Packet()
 
 	m_pBinData = nullptr;
 }
+
+Packet::Packet(const Packet& Other)
+{
+	m_pBinData = new char[GetMaxPackByteSize()];
+	CopyMemory(m_pBinData, Other.m_pBinData, GetMaxPackByteSize());
+
+	m_Header = Other.m_Header;
+
+	m_SessionIdx = Other.m_SessionIdx;
+
+	m_PosX = Other.m_PosX;
+	m_PosY = Other.m_PosY;
+	m_PosZ = Other.m_PosZ;
+
+	m_RotX = Other.m_RotX;
+	m_RotY = Other.m_RotY;
+	m_RotZ = Other.m_RotZ;
+
+	m_bIsJumping = Other.m_bIsJumping;
+}
+
+//Packet::Packet(Packet&& Other) noexcept
+//{
+//}
+
+Packet& Packet::operator=(const Packet& Other)
+{
+	if (this == &Other)
+		return *this;
+
+	CopyMemory(m_pBinData, Other.m_pBinData, GetMaxPackByteSize());
+
+	m_Header = Other.m_Header;
+
+	m_MsgType = Other.m_MsgType;
+	m_SessionIdx = Other.m_SessionIdx;
+
+	m_PosX = Other.m_PosX;
+	m_PosY = Other.m_PosY;
+	m_PosZ = Other.m_PosZ;
+
+	m_RotX = Other.m_RotX;
+	m_RotY = Other.m_RotY;
+	m_RotZ = Other.m_RotZ;
+
+	m_bIsJumping = Other.m_bIsJumping;
+
+	return *this;
+}
+
+//Packet& Packet::operator=(Packet&& Other) noexcept
+//{
+//	// TODO: 여기에 return 문을 삽입합니다.
+//}
 
 UINT32 Packet::Write(char*& _pOutStartPt)
 {
