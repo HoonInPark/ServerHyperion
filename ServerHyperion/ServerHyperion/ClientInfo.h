@@ -65,6 +65,7 @@ public:
 		setsockopt(mSocket, SOL_SOCKET, SO_LINGER, (char*)&stLinger, sizeof(stLinger));
 
 		m_IsConnected = 0;
+		m_IsInited = 0;
 		mLatestClosedTimeSec = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 		//소켓 연결을 종료 시킨다.
 		closesocket(mSocket);
