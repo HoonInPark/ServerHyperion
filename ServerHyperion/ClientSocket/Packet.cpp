@@ -257,7 +257,28 @@ bool Packet::Read(char* _pInStartPt, const UINT32 _InSize)
 	return true;
 }
 
+
 /*
+void Packet::Clear()
+{
+	fill(m_Header.begin(), m_Header.end(), false);
+
+	m_MsgType = MsgType::MSG_NONE;
+	m_SessionIdx = 0;
+
+	m_PosX = 0.f;
+	m_PosY = 0.f;
+	m_PosZ = 0.f;
+
+	m_RotX = 0.f;
+	m_RotY = 0.f;
+	m_RotZ = 0.f;
+
+	m_bIsJumping = false;
+	
+	ZeroMemory(m_pBinData, GetMaxPackByteSize());
+}
+
 bool Packet::CacheWrite(shared_ptr<Packet> _InPack)
 {
 	if (_InPack.get() == this) return false;

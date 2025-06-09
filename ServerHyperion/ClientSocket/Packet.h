@@ -138,8 +138,6 @@ public:
 	inline double GetRotZ() const { return m_RotZ; }
 	inline bool GetIsJumping() const { return m_bIsJumping; }
 
-	inline UINT32 GetSize() { return m_BinDataSizeTmp; }
-
 	static inline UINT32 // return byte
 		GetSize(Header _InHeaderIdx)
 	{
@@ -191,7 +189,6 @@ private:
 
 	////////////////////// bin //////////////////////
 	char* m_pBinData;
-	UINT32 m_BinDataSizeTmp;
 	//////////////////// bin end ////////////////////
 
 	/////////////////////// cache data end ///////////////////////
