@@ -15,7 +15,7 @@
 using namespace std;
 
 template <typename T>
-class /*SERVERHYPERION_API*/ ObjPool
+class ObjPool
 {
 public:
 	ObjPool() = default;
@@ -34,7 +34,7 @@ template<typename T>
 template<class ...P>
 inline ObjPool<T>::ObjPool(size_t _InInitSize, P&&... params)
 {
-	for (size_t i = 0; i < 60; ++i)
+	for (size_t i = 0; i < _InInitSize; ++i)
 	{
 		m_Data.push(make_shared<T>(forward<P>(params)...));
 	}
