@@ -45,6 +45,23 @@ public:
 
 	virtual void OnClose(const UINT32 clientIndex_) override
 	{
+		m_Lock.lock();
+
+		shared_ptr<Packet> pPack = m_pPackPool->Acquire();
+		if (!pPack)
+		{
+			m_Lock.unlock();
+			printf("[OnConnect] : PackPool Error");
+			return;
+		}
+
+		pPack->SetMsgType(MsgType::MSG_CLOSE);
+		pPack->SetSessionIdx(clientIndex_);
+
+		m_pPackQ->push(pPack);
+
+		m_Lock.unlock();
+
 		printf("[OnClose] : Index(%d)\n", clientIndex_);
 	}
 
@@ -123,6 +140,7 @@ private:
 
 			pPack = m_pPackQ->front();
 			m_pPackQ->pop();
+			m_Lock.unlock();
 
 			Size = pPack->Write(pStart);
 
@@ -136,8 +154,10 @@ private:
 					SendMsg(i, Size, pStart);
 				}
 
+				m_Lock.lock();
 				m_pPackPool->Return(pPack);
 				m_Lock.unlock();
+
 				continue;
 			}
 			case MsgType::MSG_GAME:
@@ -151,6 +171,21 @@ private:
 					}
 				}
 
+				m_Lock.lock();
+				m_pPackPool->Return(pPack);
+				m_Lock.unlock();
+
+				continue;
+			}
+			case MsgType::MSG_CLOSE:
+			{
+				for (int i = 0; i < m_ClientInfos.size(); ++i)
+				{
+					if (0 == m_ClientInfos[i]->IsInited()) continue; // if IsInited is 0, also IsConnected is 0, so skip
+					SendMsg(i, Size, pStart);
+				}
+
+				m_Lock.lock();
 				m_pPackPool->Return(pPack);
 				m_Lock.unlock();
 
@@ -158,7 +193,6 @@ private:
 			}
 			default:
 			{
-				m_Lock.unlock();
 				printf("[ProcPack] unknown msg type ERROR!!!");
 				break;
 			}

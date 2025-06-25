@@ -28,9 +28,10 @@ enum class IOOperation
 enum class MsgType
 {
 	MSG_NONE = 0,
-	
+
 	MSG_INIT,
 	MSG_GAME,
+	MSG_CLOSE,
 
 	MSG_MAX
 };
