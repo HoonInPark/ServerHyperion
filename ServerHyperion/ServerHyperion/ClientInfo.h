@@ -14,27 +14,27 @@ public:
 	stClientInfo()
 	{
 		ZeroMemory(&mRecvOverlappedEx, sizeof(stOverlappedEx));
-		mSocket = INVALID_SOCKET;
+		m_Socket = INVALID_SOCKET;
 
 		m_SendDataPool = ObjPool<stOverlappedEx>(60);
 	}
 
 	void Init(const UINT32 index, HANDLE iocpHandle_)
 	{
-		mIndex = index;
+		m_Index = index;
 		mIOCPHandle = iocpHandle_;
 	}
 
-	inline UINT32 GetIndex() { return mIndex; }
+	inline UINT32 GetIndex() { return m_Index; }
 	inline bool IsConnected() { return m_IsConnected == 1; }
 	inline bool IsInited() { return m_IsInited == 1; }
-	inline SOCKET GetSock() { return mSocket; }
-	inline UINT64 GetLatestClosedTimeSec() { return mLatestClosedTimeSec; }
+	inline SOCKET GetSock() { return m_Socket; }
+	inline UINT64 GetLatestClosedTimeSec() { return m_LatestClosedTimeSec; }
 	inline char* RecvBuffer() { return mRecvBuf; }
 
 	bool OnConnect(HANDLE iocpHandle_, SOCKET socket_)
 	{
-		mSocket = socket_;
+		m_Socket = socket_;
 		m_IsConnected = 1;
 
 		Clear();
@@ -59,17 +59,17 @@ public:
 		}
 
 		//socketClose소켓의 데이터 송수신을 모두 중단 시킨다.
-		shutdown(mSocket, SD_BOTH);
+		shutdown(m_Socket, SD_BOTH);
 
 		//소켓 옵션을 설정한다.
-		setsockopt(mSocket, SOL_SOCKET, SO_LINGER, (char*)&stLinger, sizeof(stLinger));
+		setsockopt(m_Socket, SOL_SOCKET, SO_LINGER, (char*)&stLinger, sizeof(stLinger));
 
 		m_IsConnected = 0;
 		m_IsInited = 0;
-		mLatestClosedTimeSec = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+		m_LatestClosedTimeSec = chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now().time_since_epoch()).count();
 		//소켓 연결을 종료 시킨다.
-		closesocket(mSocket);
-		mSocket = INVALID_SOCKET;
+		closesocket(m_Socket);
+		m_Socket = INVALID_SOCKET;
 	}
 
 	void Clear()
@@ -80,27 +80,27 @@ public:
 	{
 		printf_s("PostAccept. client Index: %d\n", GetIndex());
 
-		mLatestClosedTimeSec = UINT32_MAX;
+		m_LatestClosedTimeSec = UINT32_MAX;
 
-		mSocket = WSASocket(AF_INET, SOCK_STREAM, IPPROTO_IP,
+		m_Socket = WSASocket(AF_INET, SOCK_STREAM, IPPROTO_IP,
 			NULL, 0, WSA_FLAG_OVERLAPPED);
-		if (INVALID_SOCKET == mSocket)
+		if (INVALID_SOCKET == m_Socket)
 		{
 			printf_s("client Socket WSASocket Error : %d\n", GetLastError());
 			return false;
 		}
 
-		ZeroMemory(&mAcceptContext, sizeof(stOverlappedEx));
+		ZeroMemory(&m_AcceptContext, sizeof(stOverlappedEx));
 
 		DWORD bytes = 0;
 		DWORD flags = 0;
-		mAcceptContext.m_wsaBuf.len = 0;
-		mAcceptContext.m_wsaBuf.buf = nullptr;
-		mAcceptContext.m_eOperation = IOOperation::IO_ACCEPT;
-		mAcceptContext.SessionIndex = mIndex;
+		m_AcceptContext.m_wsaBuf.len = 0;
+		m_AcceptContext.m_wsaBuf.buf = nullptr;
+		m_AcceptContext.m_eOperation = IOOperation::IO_ACCEPT;
+		m_AcceptContext.SessionIndex = m_Index;
 
-		if (FALSE == AcceptEx(listenSock_, mSocket, mAcceptBuf, 0,
-			sizeof(SOCKADDR_IN) + 16, sizeof(SOCKADDR_IN) + 16, &bytes, (LPWSAOVERLAPPED) & (mAcceptContext)))
+		if (FALSE == AcceptEx(listenSock_, m_Socket, m_AcceptBuf, 0,
+			sizeof(SOCKADDR_IN) + 16, sizeof(SOCKADDR_IN) + 16, &bytes, (LPWSAOVERLAPPED) & (m_AcceptContext)))
 		{
 			if (WSAGetLastError() != WSA_IO_PENDING)
 			{
@@ -114,9 +114,9 @@ public:
 
 	bool AcceptCompletion()
 	{
-		printf_s("AcceptCompletion : SessionIndex(%d)\n", mIndex);
+		printf_s("AcceptCompletion : SessionIndex(%d)\n", m_Index);
 
-		if (OnConnect(mIOCPHandle, mSocket) == false)
+		if (OnConnect(mIOCPHandle, m_Socket) == false)
 		{
 			return false;
 		}
@@ -125,7 +125,7 @@ public:
 		int nAddrLen = sizeof(SOCKADDR_IN);
 		char clientIP[32] = { 0, };
 		inet_ntop(AF_INET, &(stClientAddr.sin_addr), clientIP, 32 - 1);
-		printf("클라이언트 접속 : IP(%s) SOCKET(%d)\n", clientIP, (int)mSocket);
+		printf("클라이언트 접속 : IP(%s) SOCKET(%d)\n", clientIP, (int)m_Socket);
 
 		return true;
 	}
@@ -135,7 +135,8 @@ public:
 		//socket과 pClientInfo를 CompletionPort객체와 연결시킨다.
 		auto hIOCP = CreateIoCompletionPort((HANDLE)GetSock()
 			, iocpHandle_
-			, (ULONG_PTR)(this), 0);
+			, (ULONG_PTR)(this)
+			, 0);
 
 		if (hIOCP == INVALID_HANDLE_VALUE)
 		{
@@ -157,7 +158,7 @@ public:
 		mRecvOverlappedEx.m_eOperation = IOOperation::IO_RECV;
 
 		int nRet = WSARecv(
-			mSocket,
+			m_Socket,
 			&(mRecvOverlappedEx.m_wsaBuf),
 			1,
 			&dwRecvNumBytes,
@@ -185,7 +186,7 @@ public:
 		if (!pSendOverlappedEx)
 		{
 			m_SendLock.unlock();
-			printf("SendMsg Error in Client %d", mIndex);
+			printf("SendMsg Error in Client %d", m_Index);
 			return false;
 		}
 
@@ -256,7 +257,7 @@ private:
 
 		DWORD dwRecvNumBytes = 0;
 		int nRet = WSASend(
-			mSocket,
+			m_Socket,
 			&(sendOverlappedEx->m_wsaBuf),
 			1,
 			&dwRecvNumBytes,
@@ -283,14 +284,14 @@ private:
 		}*/
 
 		int opt = 1;
-		if (SOCKET_ERROR == setsockopt(mSocket, IPPROTO_TCP, TCP_NODELAY, (const char*)&opt, sizeof(int)))
+		if (SOCKET_ERROR == setsockopt(m_Socket, IPPROTO_TCP, TCP_NODELAY, (const char*)&opt, sizeof(int)))
 		{
 			printf_s("[DEBUG] TCP_NODELAY error: %d\n", GetLastError());
 			return false;
 		}
 
 		opt = 0;
-		if (SOCKET_ERROR == setsockopt(mSocket, SOL_SOCKET, SO_RCVBUF, (const char*)&opt, sizeof(int)))
+		if (SOCKET_ERROR == setsockopt(m_Socket, SOL_SOCKET, SO_RCVBUF, (const char*)&opt, sizeof(int)))
 		{
 			printf_s("[DEBUG] SO_RCVBUF change error: %d\n", GetLastError());
 			return false;
@@ -300,18 +301,18 @@ private:
 	}
 
 private:
-	INT32 mIndex = 0;
+	INT32 m_Index = 0;
 	HANDLE mIOCPHandle = INVALID_HANDLE_VALUE;
 
 	INT64 m_IsConnected = 0;
 	atomic<INT64> m_IsInited = 0; // 0: not initialized, 1: initialized
 
-	UINT64 mLatestClosedTimeSec = 0;
+	UINT64 m_LatestClosedTimeSec = 0;
 
-	SOCKET			mSocket;			//Cliet와 연결되는 소켓
+	SOCKET			m_Socket;			//Cliet와 연결되는 소켓
 
-	stOverlappedEx	mAcceptContext;
-	char mAcceptBuf[64];
+	stOverlappedEx	m_AcceptContext;
+	char m_AcceptBuf[64];
 
 	stOverlappedEx	mRecvOverlappedEx;	//IO_RECV Overlapped I/O작업을 위한 변수	
 	char			mRecvBuf[MAX_SOCK_RECVBUF]; //데이터 버퍼

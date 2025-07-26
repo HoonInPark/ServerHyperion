@@ -7,6 +7,7 @@
 #include "Define.h"
 #include <thread>
 #include <vector>
+#include <unordered_set>
 
 class IOCPServer
 {
@@ -152,13 +153,14 @@ public:
 private:
 	void CreateClient(const UINT32 maxClientCount)
 	{
-		for (UINT32 i = 0; i < maxClientCount; ++i)
-		{
-			auto client = new stClientInfo;
-			client->Init(i, mIOCPHandle);
+		//for (UINT32 i = 0; i < maxClientCount; ++i)
+		//{
+		//	auto client = new stClientInfo;
+		//	client->Init(i, mIOCPHandle);
+		//	m_ClientInfos.push_back(client);
+		//}
 
-			m_ClientInfos.push_back(client);
-		}
+		m_ClientInfoPool = ObjPool<stClientInfo>(30);
 	}
 
 	//WaitingThread Queue에서 대기할 쓰레드들을 생성
@@ -192,7 +194,7 @@ private:
 	//accept요청을 처리하는 쓰레드 생성
 	bool CreateAccepterThread()
 	{
-		mAccepterThread = std::thread([this]() { AccepterThread(); });
+		mAccepterThread = thread([this]() { AccepterThread(); });
 
 		printf("AccepterThread 시작..\n");
 		return true;
@@ -282,15 +284,17 @@ private:
 	{
 		while (mIsAccepterRun)
 		{
-			auto curTimeSec = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+			auto curTimeSec = chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now().time_since_epoch()).count();
 
 			for (auto client : m_ClientInfos)
 			{
+				// if client elem is in use, continue.
 				if (client->IsConnected())
 				{
 					continue;
 				}
 
+				// if client elem is not 
 				if ((UINT64)curTimeSec < client->GetLatestClosedTimeSec())
 				{
 					continue;
@@ -305,17 +309,14 @@ private:
 				client->PostAccept(mListenSocket, curTimeSec);
 			}
 
-			std::this_thread::sleep_for(std::chrono::milliseconds(32));
+			this_thread::sleep_for(chrono::milliseconds(32));
 		}
 	}
 
-	//소켓의 연결을 종료 시킨다.
 	void CloseSocket(stClientInfo* pClientInfo, bool bIsForce = false)
 	{
 		auto clientIndex = pClientInfo->GetIndex();
-
 		pClientInfo->Close(bIsForce);
-
 		OnClose(clientIndex);
 	}
 
@@ -335,10 +336,10 @@ protected:
 	int			mClientCnt = 0;
 
 	//IO Worker 스레드
-	std::vector<std::thread> mIOWorkerThreads;
+	vector<thread> mIOWorkerThreads;
 
 	//Accept 스레드
-	std::thread	mAccepterThread;
+	thread	mAccepterThread;
 
 	//CompletionPort객체 핸들
 	HANDLE		mIOCPHandle{ INVALID_HANDLE_VALUE };
@@ -351,5 +352,8 @@ protected:
 
 protected:
 	//클라이언트 정보 저장 구조체
-	std::vector<stClientInfo*> m_ClientInfos;
+	vector<stClientInfo*> m_ClientInfos;
+
+	ObjPool<stClientInfo> m_ClientInfoPool;
+	unordered_set<shared_ptr<stClientInfo>> m_ConnectedClientInfos;
 };
