@@ -33,9 +33,9 @@ public:
 		}
 
 		//연결지향형 TCP , Overlapped I/O 소켓을 생성
-		mListenSocket = WSASocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, NULL, WSA_FLAG_OVERLAPPED);
+		m_ListenSocket = WSASocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, NULL, WSA_FLAG_OVERLAPPED);
 
-		if (INVALID_SOCKET == mListenSocket)
+		if (INVALID_SOCKET == m_ListenSocket)
 		{
 			printf("[에러] socket()함수 실패 : %d\n", WSAGetLastError());
 			return false;
@@ -61,7 +61,7 @@ public:
 
 		// 위에서 지정한 서버 주소 정보와 cIOCompletionPort 소켓을 연결한다. 
 		// cIOCompletionPort는 서버의 주소정보를 가지고 있는 소켓이다.
-		int nRet = bind(mListenSocket, (SOCKADDR*)&stServerAddr, sizeof(SOCKADDR_IN));
+		int nRet = bind(m_ListenSocket, (SOCKADDR*)&stServerAddr, sizeof(SOCKADDR_IN));
 		if (0 != nRet)
 		{
 			printf("[에러] bind()함수 실패 : %d\n", WSAGetLastError());
@@ -70,7 +70,7 @@ public:
 
 		//접속 요청을 받아들이기 위해 cIOCompletionPort소켓을 등록하고 
 		//접속대기큐를 5개로 설정 한다. -> 5개 이상의 접속 요청이 들어오면 대기큐에 쌓인다.
-		nRet = listen(mListenSocket, 5);
+		nRet = listen(m_ListenSocket, 5);
 		if (0 != nRet)
 		{
 			printf("[에러] listen()함수 실패 : %d\n", WSAGetLastError());
@@ -85,7 +85,7 @@ public:
 			return false;
 		}
 
-		auto hIOCPHandle = CreateIoCompletionPort((HANDLE)mListenSocket, mIOCPHandle, (UINT32)0, 0);
+		auto hIOCPHandle = CreateIoCompletionPort((HANDLE)m_ListenSocket, mIOCPHandle, (UINT32)0, 0);
 		if (nullptr == hIOCPHandle)
 		{
 			printf("[에러] listen socket IOCP bind 실패 : %d\n", WSAGetLastError());
@@ -132,7 +132,7 @@ public:
 
 		//Accepter 쓰레드를 종요한다.
 		mIsAccepterRun = false;
-		closesocket(mListenSocket);
+		closesocket(m_ListenSocket);
 
 		if (mAccepterThread.joinable())
 		{
@@ -285,16 +285,9 @@ private:
 		while (mIsAccepterRun)
 		{
 			auto curTimeSec = chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now().time_since_epoch()).count();
-
-			for (auto client : m_ClientInfos)
+			
+			for (const shared_ptr<stClientInfo> client : m_ClientInfoPool)
 			{
-				// if client elem is in use, continue.
-				if (client->IsConnected())
-				{
-					continue;
-				}
-
-				// if client elem is not 
 				if ((UINT64)curTimeSec < client->GetLatestClosedTimeSec())
 				{
 					continue;
@@ -306,7 +299,7 @@ private:
 					continue;
 				}
 
-				client->PostAccept(mListenSocket, curTimeSec);
+				client->PostAccept(m_ListenSocket, curTimeSec);
 			}
 
 			this_thread::sleep_for(chrono::milliseconds(32));
@@ -330,7 +323,7 @@ protected:
 	UINT32 MaxIOWorkerThreadCount{ 0 };
 
 	//클라이언트의 접속을 받기위한 리슨 소켓
-	SOCKET		mListenSocket{ INVALID_SOCKET };
+	SOCKET		m_ListenSocket{ INVALID_SOCKET };
 
 	//접속 되어있는 클라이언트 수
 	int			mClientCnt = 0;

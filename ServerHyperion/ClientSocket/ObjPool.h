@@ -9,7 +9,7 @@
 #endif
 
 #include <iostream>
-#include <queue>
+#include <deque>
 #include <utility>
 
 using namespace std;
@@ -26,17 +26,22 @@ public:
 	shared_ptr<T> Acquire();
 	void Return(shared_ptr<T>& _pInElem);
 
+	inline auto begin() const { return m_Data.begin(); }
+	inline auto end() const { return m_Data.end(); }
+
 private:
-	queue <shared_ptr< T >> m_Data;
+	size_t m_SizeLim;
+	deque <shared_ptr< T >> m_Data;
 };
 
 template<typename T>
 template<class ...P>
 inline ObjPool<T>::ObjPool(size_t _InInitSize, P&&... params)
+	: m_SizeLim(_InInitSize)
 {
 	for (size_t i = 0; i < _InInitSize; ++i)
 	{
-		m_Data.push(make_shared<T>(forward<P>(params)...));
+		m_Data.push_back(make_shared<T>(forward<P>(params)...));
 	}
 }
 
@@ -47,7 +52,7 @@ inline shared_ptr<T> ObjPool<T>::Acquire()
 		return nullptr;
 	
 	shared_ptr<T> RetPtr = m_Data.front();
-	m_Data.pop();
+	m_Data.pop_front();
 
 	return RetPtr;
 }
@@ -55,5 +60,9 @@ inline shared_ptr<T> ObjPool<T>::Acquire()
 template<typename T>
 inline void ObjPool<T>::Return(shared_ptr<T>& _pInElem)
 {
-	m_Data.push(_pInElem);
+	if (m_SizeLim > m_Data.size())
+		m_Data.push_back(_pInElem);
+	else
+		printf("ObjPool Error : You're trying to push more than its initial size!!!");
 }
+
