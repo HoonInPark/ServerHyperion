@@ -59,7 +59,7 @@ public:
 	 * @param CapacityPlusOne The number of elements that the queue can hold (will be rounded up to the next power of 2).
 	 */
 	template<class ...P>
-	CircularQueue(uint32 CapacityPlusOne, P&&... _Params)
+	CircularQueue(uint32 CapacityPlusOne = 0, P&&... _Params)
 		: Buffer(CapacityPlusOne, forward<P>(_Params)...)
 		, Head(0)
 		, Tail(0)
@@ -68,7 +68,7 @@ public:
 
 	__forceinline CircularQueue& operator=(const CircularQueue& _InCirQ)
 	{
-		if (*this == _InCirQ) return *this;
+		if (this == &_InCirQ) return *this;
 
 		Buffer = _InCirQ.Buffer;
 		return *this;
@@ -263,7 +263,6 @@ public:
 	}
 
 private:
-
 	/** Holds the buffer. */
 	CircularBuffer<FElementType> Buffer;
 

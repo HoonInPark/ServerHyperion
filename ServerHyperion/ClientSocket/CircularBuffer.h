@@ -37,7 +37,7 @@ public:
 	 *
 	 * @param Capacity The number of elements that the buffer can store (will be rounded up to the next power of 2).
 	 */
-	explicit CircularBuffer(uint32 Capacity)
+	explicit CircularBuffer(uint32 Capacity = 0)
 	{
 		if (Capacity <= 0) return;
 		if (Capacity > 0xffffffffU) return;
@@ -55,7 +55,7 @@ public:
 	 * @param InitialValue The initial value for the buffer's elements.
 	 */
 	template<class ...P>
-	CircularBuffer(uint32 Capacity, P&&... _Params) 
+	CircularBuffer(uint32 Capacity = 0, P&&... _Params) 
 	{
 		if (Capacity > 0xffffffffU) return;
 
@@ -67,7 +67,7 @@ public:
 
 	__forceinline CircularBuffer& operator=(const CircularBuffer& _InCirBuf)
 	{
-		if (*this == _InCirBuf) return *this;
+		if (this == &_InCirBuf) return *this;
 
 		Elements = _InCirBuf.Elements;
 		return *this;
@@ -95,7 +95,6 @@ public:
 	}
 
 public:
-
 	/**
 	 * Returns the number of elements that the buffer can hold.
 	 *
@@ -129,7 +128,6 @@ public:
 	}
 
 private:
-
 	/** Holds the mask for indexing the buffer's elements. */
 	uint32 IndexMask;
 

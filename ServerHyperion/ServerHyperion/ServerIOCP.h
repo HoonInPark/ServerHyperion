@@ -286,7 +286,7 @@ private:
 		{
 			auto curTimeSec = chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now().time_since_epoch()).count();
 			
-			m_AcceptLock.lock();
+			/*
 			for (const shared_ptr<stClientInfo> client : m_ClientInfoPool)
 			{
 				if ((UINT64)curTimeSec < client->GetLatestClosedTimeSec())
@@ -302,7 +302,7 @@ private:
 
 				client->PostAccept(m_ListenSocket, curTimeSec);
 			}
-			m_AcceptLock.unlock();
+			*/
 
 			this_thread::sleep_for(chrono::milliseconds(32));
 		}
@@ -348,8 +348,6 @@ protected:
 protected:
 	//클라이언트 정보 저장 구조체
 	vector<stClientInfo*> m_ClientInfos;
-
-	mutex m_AcceptLock;
 
 	ObjPool<stClientInfo> m_ClientInfoPool;
 	unordered_set<shared_ptr<stClientInfo>> m_ConnectedClientInfos;
