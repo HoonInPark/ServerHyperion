@@ -180,28 +180,21 @@ public:
 	// obj pooling must be implemented
 	bool SendMsg(const UINT32 _InSize, char* _pInMsg)
 	{
-		m_SendLock.lock();
-
 		shared_ptr<stOverlappedEx> pSendOverlappedEx = m_SendDataPool.Acquire();
 		if (!pSendOverlappedEx)
 		{
-			m_SendLock.unlock();
 			printf("SendMsg Error in Client %d", m_Index);
 			return false;
 		}
-
-		m_SendLock.unlock();
 
 		pSendOverlappedEx->Init();
 		pSendOverlappedEx->m_wsaBuf.len = _InSize;
 		CopyMemory(pSendOverlappedEx->m_wsaBuf.buf, _pInMsg, _InSize);
 		pSendOverlappedEx->m_eOperation = IOOperation::IO_SEND;
 
-		lock_guard<mutex> guard(m_SendLock);
+		m_SendDataQ.Enqueue(pSendOverlappedEx);
 
-		m_SendDataQ.push(pSendOverlappedEx);
-
-		if (m_SendDataQ.size() == 1)
+		if (m_SendDataQ.Count() == 1)
 		{
 			SendIO();
 		}
@@ -213,9 +206,8 @@ public:
 	{
 		printf("[송신 완료] bytes : %d\n", dataSize_);
 
-		lock_guard<mutex> guard(m_SendLock);
-
-		shared_ptr<stOverlappedEx> pSendOverlappedEx = m_SendDataQ.front();
+		shared_ptr<stOverlappedEx> pSendOverlappedEx;
+		m_SendDataQ.Dequeue(pSendOverlappedEx);
 
 		char MsgTypeInBuff = pSendOverlappedEx->m_wsaBuf.buf[static_cast<int>(Packet::Header::MAX)];
 		switch (static_cast<MsgType>(MsgTypeInBuff))
@@ -242,9 +234,8 @@ public:
 		}
 
 		m_SendDataPool.Return(pSendOverlappedEx);
-		m_SendDataQ.pop();
 
-		if (!m_SendDataQ.empty())
+		if (!m_SendDataQ.IsEmpty())
 		{
 			SendIO();
 		}
@@ -253,7 +244,8 @@ public:
 private:
 	bool SendIO()
 	{
-		auto sendOverlappedEx = m_SendDataQ.front();
+		shared_ptr<stOverlappedEx> sendOverlappedEx;
+		m_SendDataQ.Dequeue(sendOverlappedEx);
 
 		DWORD dwRecvNumBytes = 0;
 		int nRet = WSASend(
@@ -318,6 +310,6 @@ private:
 	char			mRecvBuf[MAX_SOCK_RECVBUF]; //데이터 버퍼
 
 	mutex m_SendLock;
-	queue <shared_ptr< stOverlappedEx >> m_SendDataQ;
+	StlCircularQueue <shared_ptr< stOverlappedEx >> m_SendDataQ;
 	ObjPool<stOverlappedEx> m_SendDataPool;
 };

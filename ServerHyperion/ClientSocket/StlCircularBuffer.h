@@ -40,7 +40,7 @@ public:
 	 */
 	StlCircularBuffer(uint32 Capacity = 0)
 	{
-		if (Capacity <= 0) return;
+		if (Capacity < 0) return;
 		if (Capacity > 0xffffffffU) return;
 
 		Elements.resize(bit_ceil(Capacity));
