@@ -2,9 +2,9 @@
 
 #include "Define.h"
 #include "ObjPool.h"
+#include "StlCircularQueue.h"
 #include <stdio.h>
 #include <mutex>
-#include <queue>
 
 
 //클라이언트 정보를 담기위한 구조체
@@ -16,7 +16,7 @@ public:
 		ZeroMemory(&mRecvOverlappedEx, sizeof(stOverlappedEx));
 		m_Socket = INVALID_SOCKET;
 
-		m_SendDataPool = ObjPool<stOverlappedEx>(60);
+		m_SendDataPool = ObjPool<stOverlappedEx>(64);
 	}
 
 	void Init(const UINT32 index, HANDLE iocpHandle_)

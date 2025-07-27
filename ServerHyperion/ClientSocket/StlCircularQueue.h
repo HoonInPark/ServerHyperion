@@ -12,7 +12,7 @@
 
 #include <iostream>
 #include <atomic>
-#include "CircularBuffer.h"
+#include "StlCircularBuffer.h"
 
 using namespace std;
 
@@ -35,23 +35,23 @@ using namespace std;
 typedef unsigned int		uint32;
 typedef signed int	 		int32;
 
-template <typename T>
-__forceinline constexpr remove_reference_t<T>&& MoveTemp(T&& Obj) noexcept
-{
-	using CastType = std::remove_reference_t<T>;
-
-	// Validate that we're not being passed an rvalue or a const object - the former is redundant, the latter is almost certainly a mistake
-	static_assert(is_lvalue_reference_v<T>, "MoveTemp called on an rvalue");
-	static_assert(!is_same_v<CastType&, const CastType&>, "MoveTemp called on a const object");
-
-	return (CastType&&)Obj;
-}
-
 template<typename T> 
-class CircularQueue
+class StlCircularQueue
 {
 public:
 	using FElementType = T;
+
+	template <typename T>
+	__forceinline constexpr remove_reference_t<T>&& MoveTemp(T&& Obj) noexcept
+	{
+		using CastType = std::remove_reference_t<T>;
+
+		// Validate that we're not being passed an rvalue or a const object - the former is redundant, the latter is almost certainly a mistake
+		static_assert(is_lvalue_reference_v<T>, "MoveTemp called on an rvalue");
+		static_assert(!is_same_v<CastType&, const CastType&>, "MoveTemp called on a const object");
+
+		return (CastType&&)Obj;
+	}
 
 	/**
 	 * Constructor.
@@ -59,20 +59,26 @@ public:
 	 * @param CapacityPlusOne The number of elements that the queue can hold (will be rounded up to the next power of 2).
 	 */
 	template<class ...P>
-	CircularQueue(uint32 CapacityPlusOne = 0, P&&... _Params)
+	StlCircularQueue(uint32 CapacityPlusOne = 0, P&&... _Params)
 		: Buffer(CapacityPlusOne, forward<P>(_Params)...)
 		, Head(0)
 		, Tail(0)
 	{
 	}
 
-	__forceinline CircularQueue& operator=(const CircularQueue& _InCirQ)
+	__forceinline StlCircularQueue& operator=(const StlCircularQueue& _InCirQ)
 	{
 		if (this == &_InCirQ) return *this;
 
 		Buffer = _InCirQ.Buffer;
+		Head.store(_InCirQ.Head.load());
+		Tail.store(_InCirQ.Tail.load());
+
 		return *this;
 	}
+
+	inline auto begin() const { return Buffer.begin(); }
+	inline auto end() const { return Buffer.end(); }
 
 public:
 	/**
@@ -264,7 +270,7 @@ public:
 
 private:
 	/** Holds the buffer. */
-	CircularBuffer<FElementType> Buffer;
+	StlCircularBuffer<FElementType> Buffer;
 
 	/** Holds the index to the first item in the buffer. */
 	atomic<uint32> Head;

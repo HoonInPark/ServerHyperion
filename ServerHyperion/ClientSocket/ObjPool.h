@@ -11,7 +11,7 @@
 #include <iostream>
 #include <deque>
 #include <utility>
-#include "CircularQueue.h"
+#include "StlCircularQueue.h"
 
 using namespace std;
 
@@ -27,14 +27,17 @@ public:
 	shared_ptr<T> Acquire();
 	void Return(shared_ptr<T>& _pInElem);	
 
+	inline auto begin() const { return m_Data.begin(); }
+	inline auto end() const { return m_Data.end(); }
+
 private:
-	CircularQueue <shared_ptr< T >> m_Data;
+	StlCircularQueue <shared_ptr< T >> m_Data;
 };
 
 template<typename T>
 template<class ...P>
 inline ObjPool<T>::ObjPool(size_t _InInitSize, P&&... _Params)
-	: m_Data(CircularQueue<shared_ptr<T>>(_InInitSize))
+	: m_Data(StlCircularQueue<shared_ptr<T>>(_InInitSize))
 {	
 	for (size_t i = 0; i < _InInitSize; ++i)
 	{

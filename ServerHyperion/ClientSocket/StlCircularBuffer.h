@@ -27,7 +27,8 @@ using namespace std;
 
 typedef unsigned int		uint32;
 
-template<typename InElementType> class CircularBuffer
+template<typename InElementType> 
+class StlCircularBuffer
 {
 public:
 	using ElementType = InElementType;
@@ -37,7 +38,7 @@ public:
 	 *
 	 * @param Capacity The number of elements that the buffer can store (will be rounded up to the next power of 2).
 	 */
-	explicit CircularBuffer(uint32 Capacity = 0)
+	StlCircularBuffer(uint32 Capacity = 0)
 	{
 		if (Capacity <= 0) return;
 		if (Capacity > 0xffffffffU) return;
@@ -55,7 +56,7 @@ public:
 	 * @param InitialValue The initial value for the buffer's elements.
 	 */
 	template<class ...P>
-	CircularBuffer(uint32 Capacity = 0, P&&... _Params) 
+	StlCircularBuffer(uint32 Capacity = 0, P&&... _Params) 
 	{
 		if (Capacity > 0xffffffffU) return;
 
@@ -65,11 +66,12 @@ public:
 		IndexMask = Elements.size() - 1;
 	}
 
-	__forceinline CircularBuffer& operator=(const CircularBuffer& _InCirBuf)
+	__forceinline StlCircularBuffer& operator=(const StlCircularBuffer& _InCirBuf)
 	{
 		if (this == &_InCirBuf) return *this;
 
 		Elements = _InCirBuf.Elements;
+		IndexMask = _InCirBuf.IndexMask;
 		return *this;
 	}
 
