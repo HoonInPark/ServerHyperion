@@ -8,6 +8,7 @@
 #include <thread>
 #include <vector>
 #include <unordered_set>
+#include <coroutine>
 
 class IOCPServer
 {
@@ -131,7 +132,7 @@ public:
 		}
 
 		//Accepter 쓰레드를 종요한다.
-		mIsAccepterRun = false;
+		m_bIsAccepterRun = false;
 		closesocket(m_ListenSocket);
 
 		if (mAccepterThread.joinable())
@@ -160,7 +161,8 @@ private:
 		//	m_ClientInfos.push_back(client);
 		//}
 
-		m_ClientInfoPool = ObjPool<stClientInfo>(30);
+		m_ClientInfoPool = ObjPool<stClientInfo>(maxClientCount);
+		m_ClosedSessionQ = StlCircularQueue<shared_ptr<stClientInfo>>(maxClientCount);
 	}
 
 	//WaitingThread Queue에서 대기할 쓰레드들을 생성
@@ -278,42 +280,43 @@ private:
 			}
 		}
 	}
-
-	//사용자의 접속을 받는 쓰레드
-	void AccepterThread()
-	{
-		while (mIsAccepterRun)
-		{
-			auto curTimeSec = chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now().time_since_epoch()).count();
-			
-			/*
-			for (const shared_ptr<stClientInfo> client : m_ClientInfoPool)
-			{
-				if ((UINT64)curTimeSec < client->GetLatestClosedTimeSec())
-				{
-					continue;
-				}
-
-				auto diff = curTimeSec - client->GetLatestClosedTimeSec();
-				if (diff <= RE_USE_SESSION_WAIT_TIMESEC)
-				{
-					continue;
-				}
-
-				client->PostAccept(m_ListenSocket, curTimeSec);
-			}
-			*/
-
-			this_thread::sleep_for(chrono::milliseconds(32));
-		}
-	}
-
-	void CloseSocket(stClientInfo* pClientInfo, bool bIsForce = false)
+	void CloseSocket(shared_ptr<stClientInfo> pClientInfo, bool bIsForce = false)
 	{
 		auto clientIndex = pClientInfo->GetIndex();
 		pClientInfo->Close(bIsForce);
 		OnClose(clientIndex);
+
+		// 'cause io thread num is 4, it is mpsc scenario
+		{
+			unique_lock<mutex> Lock(m_ConVarLock);
+			m_ClosedSessionQ.Enqueue(pClientInfo);
+		}
+		m_ConVar.notify_all(); // 'cause we has only one waitable thread, which is accepter thread.
 	}
+
+	void AccepterThread()
+	{
+		shared_ptr<stClientInfo> pCliInfo;
+		while (m_bIsAccepterRun)
+		{
+			{
+				unique_lock<mutex> Lock(m_ConVarLock);
+				m_ConVar.wait(Lock, [this] 
+					{ 
+						return !m_ClosedSessionQ.IsEmpty() /*|| !m_bIsAccepterRun*/; // == false, it sleeps
+					});
+
+				m_ClosedSessionQ.Dequeue(pCliInfo);
+			}
+
+			thread([=]() 
+				{
+					this_thread::sleep_for(chrono::seconds(RE_USE_SESSION_WAIT_TIMESEC));
+					pCliInfo->PostAccept(m_ListenSocket, 0);
+				}).detach();
+		}
+	}
+
 
 protected:
 	stClientInfo* GetClientInfo(const UINT32 sessionIndex)
@@ -343,7 +346,7 @@ protected:
 	bool		mIsWorkerRun{ true };
 
 	//접속 쓰레드 동작 플래그
-	bool		mIsAccepterRun{ true };
+	bool		m_bIsAccepterRun{ true };
 
 protected:
 	//클라이언트 정보 저장 구조체
@@ -351,4 +354,8 @@ protected:
 
 	ObjPool<stClientInfo> m_ClientInfoPool;
 	unordered_set<shared_ptr<stClientInfo>> m_ConnectedClientInfos;
+
+	mutex m_ConVarLock;
+	condition_variable m_ConVar;
+	StlCircularQueue<shared_ptr<stClientInfo>> m_ClosedSessionQ;
 };

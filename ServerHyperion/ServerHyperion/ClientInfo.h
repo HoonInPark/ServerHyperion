@@ -309,7 +309,6 @@ private:
 	stOverlappedEx	mRecvOverlappedEx;	//IO_RECV Overlapped I/O작업을 위한 변수	
 	char			mRecvBuf[MAX_SOCK_RECVBUF]; //데이터 버퍼
 
-	mutex m_SendLock;
 	StlCircularQueue <shared_ptr< stOverlappedEx >> m_SendDataQ;
 	ObjPool<stOverlappedEx> m_SendDataPool;
 };
