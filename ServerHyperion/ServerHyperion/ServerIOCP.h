@@ -79,14 +79,14 @@ public:
 		}
 
 		//CompletionPort객체 생성 요청을 한다.
-		mIOCPHandle = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, NULL, MaxIOWorkerThreadCount);
-		if (NULL == mIOCPHandle)
+		m_IOCPHandle = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, NULL, MaxIOWorkerThreadCount);
+		if (NULL == m_IOCPHandle)
 		{
 			printf("[에러] CreateIoCompletionPort()함수 실패: %d\n", GetLastError());
 			return false;
 		}
 
-		auto hIOCPHandle = CreateIoCompletionPort((HANDLE)m_ListenSocket, mIOCPHandle, (UINT32)0, 0);
+		auto hIOCPHandle = CreateIoCompletionPort((HANDLE)m_ListenSocket, m_IOCPHandle, (UINT32)0, 0);
 		if (nullptr == hIOCPHandle)
 		{
 			printf("[에러] listen socket IOCP bind 실패 : %d\n", WSAGetLastError());
@@ -108,22 +108,16 @@ public:
 			return false;
 		}
 
-		bRet = CreateAccepterThread();
-		if (false == bRet) {
-			return false;
-		}
-
 		printf("서버 시작\n");
 		return true;
 	}
 
 	//생성되어있는 쓰레드를 파괴한다.
-	void DestroyThread()
+	virtual void CleanupThread()
 	{
-		mIsWorkerRun = false;
-		CloseHandle(mIOCPHandle);
+		m_IsWorkerRun = false;
 
-		for (auto& th : mIOWorkerThreads)
+		for (auto& th : m_IOWorkerThreads)
 		{
 			if (th.joinable())
 			{
@@ -131,15 +125,13 @@ public:
 			}
 		}
 
-		//Accepter 쓰레드를 종요한다.
-		m_bIsAccepterRun = false;
-		m_ConVar.notify_all();
-		closesocket(m_ListenSocket);
+		this_thread::sleep_for(chrono::seconds(RE_USE_SESSION_WAIT_TIMESEC + 1)); // wait for every detached thread made by CloseSocket(...) func.
+	}
 
-		if (mAccepterThread.joinable())
-		{
-			mAccepterThread.join();
-		}
+	virtual void End()
+	{
+		CloseHandle(m_IOCPHandle);
+		closesocket(m_ListenSocket);
 	}
 
 	bool SendMsg(const UINT32 sessionIndex_, const UINT32 _InDataSize, char* _pInData)
@@ -155,15 +147,12 @@ public:
 private:
 	void CreateClient(const UINT32 maxClientCount)
 	{
-		//for (UINT32 i = 0; i < maxClientCount; ++i)
-		//{
-		//	auto client = new stClientInfo;
-		//	client->Init(i, mIOCPHandle);
-		//	m_ClientInfos.push_back(client);
-		//}
-
-		m_ClientInfoPool = ObjPool<stClientInfo>(maxClientCount);
-		m_ClosedSessionQ = StlCircularQueue<shared_ptr<stClientInfo>>(maxClientCount);
+		for (UINT32 i = 0; i < maxClientCount; ++i)
+		{
+			auto pCliInfo = make_shared<stClientInfo>();
+			pCliInfo->PostAccept(m_ListenSocket);
+			m_ClientInfoPool.insert(pCliInfo);
+		}
 	}
 
 	//WaitingThread Queue에서 대기할 쓰레드들을 생성
@@ -173,41 +162,26 @@ private:
 		//WaingThread Queue에 대기 상태로 넣을 쓰레드들 생성 권장되는 개수 : (cpu개수 * 2) + 1 
 		for (int i = 0; i < MaxIOWorkerThreadCount; i++)
 		{
-			mIOWorkerThreads.emplace_back([this]() { WokerThread(); });
+			m_IOWorkerThreads.emplace_back([this]() { WokerThread(); });
 		}
 
 		printf("WokerThread 시작..\n");
 		return true;
 	}
 
-	//사용하지 않는 클라이언트 정보 구조체를 반환한다.
-	stClientInfo* GetEmptyClientInfo()
+	inline shared_ptr<stClientInfo> GetEmptyClientInfo()
 	{
-		for (auto& client : m_ClientInfos)
-		{
-			if (client->IsConnected() == false)
-			{
-				return client;
-			}
-		}
+		auto RetPtr = *m_ClientInfoPool.begin();
+		m_ClientInfoPool.erase(m_ClientInfoPool.begin());
 
-		return nullptr;
-	}
-
-	//accept요청을 처리하는 쓰레드 생성
-	bool CreateAccepterThread()
-	{
-		mAccepterThread = thread([this]() { AccepterThread(); });
-
-		printf("AccepterThread 시작..\n");
-		return true;
+		return RetPtr;
 	}
 
 	//Overlapped I/O작업에 대한 완료 통보를 받아 그에 해당하는 처리를 하는 함수
 	void WokerThread()
 	{
 		//CompletionKey를 받을 포인터 변수
-		shared_ptr<stClientInfo> pClientInfo = nullptr;
+		shared_ptr<stClientInfo> pCliInfo = nullptr;
 		//함수 호출 성공 여부
 		BOOL bSuccess = TRUE;
 		//Overlapped I/O작업에서 전송된 데이터 크기
@@ -215,19 +189,19 @@ private:
 		//I/O 작업을 위해 요청한 Overlapped 구조체를 받을 포인터
 		LPOVERLAPPED lpOverlapped = NULL;
 
-		while (mIsWorkerRun)
+		while (m_IsWorkerRun)
 		{
 			bSuccess = GetQueuedCompletionStatus(
-				mIOCPHandle,
+				m_IOCPHandle,
 				&dwIoSize,					// 실제로 전송된 바이트
-				(PULONG_PTR)&pClientInfo,		// CompletionKey
+				(PULONG_PTR)&pCliInfo,		// CompletionKey
 				&lpOverlapped,				// Overlapped IO 객체
 				INFINITE);					// 대기할 시간
 
 			//사용자 쓰레드 종료 메세지 처리..
 			if (TRUE == bSuccess && 0 == dwIoSize && NULL == lpOverlapped)
 			{
-				mIsWorkerRun = false;
+				m_IsWorkerRun = false;
 				continue;
 			}
 
@@ -242,7 +216,7 @@ private:
 			if (FALSE == bSuccess || (0 == dwIoSize && IOOperation::IO_ACCEPT != pOverlappedEx->m_eOperation))
 			{
 				//printf("socket(%d) 접속 끊김\n", (int)pClientInfo->m_socketClient);
-				CloseSocket(pClientInfo);
+				CloseSocket(pCliInfo);
 				continue;
 			}
 
@@ -250,90 +224,62 @@ private:
 			{
 			case IOOperation::IO_ACCEPT:
 			{
-				pClientInfo = GetClientInfo(pOverlappedEx->SessionIndex);
-				if (pClientInfo->AcceptCompletion())
+				//pCliInfo = GetClientInfo(pOverlappedEx->SessionIndex);
+				if (pCliInfo->AcceptCompletion())
 				{
 					//클라이언트 갯수 증가
+					/*
 					++mClientCnt;
-					OnConnect(pClientInfo->GetIndex());
+					OnConnect(pCliInfo->GetIndex());
+					*/
 				}
 				else
 				{
-					CloseSocket(pClientInfo, true);
+					CloseSocket(pCliInfo, true);
 				}
 
 				break;
 			}
 			case IOOperation::IO_RECV:
 			{
-				OnReceive(pClientInfo->GetIndex(), dwIoSize, pClientInfo->RecvBuffer());
-				pClientInfo->BindRecv();
+				OnReceive(pCliInfo->GetIndex(), dwIoSize, pCliInfo->RecvBuffer());
+				pCliInfo->BindRecv();
 				break;
 			}
 			case IOOperation::IO_SEND:
 			{
-				pClientInfo->SendCompleted(dwIoSize);
+				pCliInfo->SendCompleted(dwIoSize);
 				break;
 			}
 			default:
-				printf("Client Index(%d)에서 예외상황\n", pClientInfo->GetIndex());
+				printf("Client Index(%d)에서 예외상황\n", pCliInfo->GetIndex());
 				break;
 			}
 		}
 	}
-	void CloseSocket(shared_ptr<stClientInfo> pClientInfo, bool bIsForce = false)
+
+	void CloseSocket(shared_ptr<stClientInfo> pCliInfo, bool bIsForce = false)
 	{
-		auto clientIndex = pClientInfo->GetIndex();
-		pClientInfo->Close(bIsForce);
+		auto clientIndex = pCliInfo->GetIndex();
+		pCliInfo->Close(bIsForce);
 		OnClose(clientIndex);
 
-		// 'cause io thread num is 4, it is mpsc scenario
-		{
-			unique_lock<mutex> Lock(m_ConVarLock);
-			m_ClosedSessionQ.Enqueue(pClientInfo);
-		}
-		m_ConVar.notify_all(); // 'cause we has only one waitable thread, which is accepter thread.
-	}
-
-	void AccepterThread()
-	{
-		for (shared_ptr<stClientInfo> Elem : m_ClientInfoPool)
-		{
-			Elem->PostAccept(m_ListenSocket, 0);
-		}
-
-		shared_ptr<stClientInfo> pCliInfo;
-		while (m_bIsAccepterRun)
-		{
+		thread([&, pCliInfo]()
 			{
-				unique_lock<mutex> Lock(m_ConVarLock);
-				m_ConVar.wait(Lock, [this] 
-					{
-						return !m_ClosedSessionQ.IsEmpty() || !m_bIsAccepterRun; // if false, it sleeps
-					});
+				this_thread::sleep_for(chrono::seconds(RE_USE_SESSION_WAIT_TIMESEC));
 
-				if (!m_ClosedSessionQ.Dequeue(pCliInfo))
-					continue;
-			}
-
-			thread([=]() mutable
+				if (pCliInfo)
 				{
-					this_thread::sleep_for(chrono::seconds(RE_USE_SESSION_WAIT_TIMESEC));
-					
-					if (pCliInfo)
-					{
-						pCliInfo->PostAccept(m_ListenSocket, 0);
-						m_ClientInfoPool.Return(pCliInfo);
-					}
-				}).detach();
-		}
+					pCliInfo->PostAccept(m_ListenSocket);
+					m_ClientInfoPool.insert(pCliInfo);
+				}
+			}).detach();
 	}
-
 
 protected:
 	stClientInfo* GetClientInfo(const UINT32 sessionIndex)
 	{
-		return m_ClientInfos[sessionIndex];
+		//return m_ClientInfos[sessionIndex];
 	}
 
 
@@ -346,28 +292,21 @@ protected:
 	int			mClientCnt = 0;
 
 	//IO Worker 스레드
-	vector<thread> mIOWorkerThreads;
+	vector<thread> m_IOWorkerThreads;
 
 	//Accept 스레드
 	thread	mAccepterThread;
 
 	//CompletionPort객체 핸들
-	HANDLE		mIOCPHandle{ INVALID_HANDLE_VALUE };
+	HANDLE		m_IOCPHandle{ INVALID_HANDLE_VALUE };
 
 	//작업 쓰레드 동작 플래그
-	bool		mIsWorkerRun{ true };
+	bool		m_IsWorkerRun{ true };
 
 	//접속 쓰레드 동작 플래그
 	bool		m_bIsAccepterRun{ true };
 
 protected:
-	//클라이언트 정보 저장 구조체
-	vector<stClientInfo*> m_ClientInfos;
-
-	ObjPool<stClientInfo> m_ClientInfoPool;
+	unordered_set<shared_ptr<stClientInfo>> m_ClientInfoPool;
 	unordered_set<shared_ptr<stClientInfo>> m_ConnectedClientInfos;
-
-	mutex m_ConVarLock;
-	condition_variable m_ConVar;
-	StlCircularQueue<shared_ptr<stClientInfo>> m_ClosedSessionQ;
 };

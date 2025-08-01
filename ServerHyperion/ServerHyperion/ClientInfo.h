@@ -22,7 +22,7 @@ public:
 	void Init(const UINT32 index, HANDLE iocpHandle_)
 	{
 		m_Index = index;
-		mIOCPHandle = iocpHandle_;
+		m_IOCPHandle = iocpHandle_;
 	}
 
 	inline UINT32 GetIndex() { return m_Index; }
@@ -76,7 +76,7 @@ public:
 	{
 	}
 
-	bool PostAccept(SOCKET listenSock_, const UINT64 curTimeSec_)
+	bool PostAccept(SOCKET listenSock_, const UINT64 curTimeSec_ = 0)
 	{
 		printf_s("PostAccept. client Index: %d\n", GetIndex());
 
@@ -116,7 +116,7 @@ public:
 	{
 		printf_s("AcceptCompletion : SessionIndex(%d)\n", m_Index);
 
-		if (OnConnect(mIOCPHandle, m_Socket) == false)
+		if (OnConnect(m_IOCPHandle, m_Socket) == false)
 		{
 			return false;
 		}
@@ -294,7 +294,7 @@ private:
 
 private:
 	INT32 m_Index = 0;
-	HANDLE mIOCPHandle = INVALID_HANDLE_VALUE;
+	HANDLE m_IOCPHandle = INVALID_HANDLE_VALUE;
 
 	INT64 m_IsConnected = 0;
 	atomic<INT64> m_IsInited = 0; // 0: not initialized, 1: initialized

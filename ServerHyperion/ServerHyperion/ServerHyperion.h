@@ -14,6 +14,10 @@ using namespace std;
 
 #define PUBLIC_PACK_POOL_SIZE 300
 
+/// <summary>
+/// in ServerHyperion, we wrote game logics rather than low level network pocess...
+/// and this class is especially for project hyperion, as IOCPServer class fits for all projects.
+/// </summary>
 class ServerHyperion : public IOCPServer
 {
 public:
@@ -92,7 +96,7 @@ public:
 		m_pPackPool = new ObjPool<Packet>(PUBLIC_PACK_POOL_SIZE);
 		m_pPackQ = new queue<shared_ptr< Packet >>();
 
-		mIsRunProcessThread = true;
+		m_bIsRunProcThread = true;
 		mProcessThread = thread( // lambda bind here use onlu a thread
 			[this]()
 			{
@@ -103,16 +107,22 @@ public:
 		StartServer(maxClient);
 	}
 
-	void End()
+	virtual void CleanupThread() override
 	{
-		mIsRunProcessThread = false;
+		m_bIsRunProcThread = false;
 
 		if (mProcessThread.joinable())
 		{
 			mProcessThread.join();
 		}
 
-		DestroyThread();
+		IOCPServer::CleanupThread();
+	}
+
+	virtual void End() override
+	{
+		IOCPServer::End();
+		CleanupThread();
 
 		delete m_pPackQ;
 		delete m_pPackPool;
@@ -126,7 +136,7 @@ private:
 		char* pStart = nullptr;
 		UINT8 Size;
 
-		while (mIsRunProcessThread)
+		while (m_bIsRunProcThread)
 		{
 			m_Lock.lock();
 
@@ -200,7 +210,7 @@ private:
 		}
 	}
 
-	bool mIsRunProcessThread = false;
+	bool m_bIsRunProcThread = false;
 
 	thread mProcessThread;
 
