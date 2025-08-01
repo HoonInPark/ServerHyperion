@@ -150,6 +150,7 @@ private:
 		for (UINT32 i = 0; i < maxClientCount; ++i)
 		{
 			auto pCliInfo = make_shared<stClientInfo>();
+			pCliInfo->Init(i, m_IOCPHandle);
 			pCliInfo->PostAccept(m_ListenSocket);
 			m_ClientInfoPool.insert(pCliInfo);
 		}

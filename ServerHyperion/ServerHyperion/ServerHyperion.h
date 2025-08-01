@@ -153,7 +153,7 @@ private:
 			m_Lock.unlock();
 
 			Size = pPack->Write(pStart);
-
+			/*
 			switch (pPack->GetMsgType())
 			{
 			case MsgType::MSG_INIT:
@@ -207,6 +207,7 @@ private:
 				break;
 			}
 			}
+			*/
 		}
 	}
 
