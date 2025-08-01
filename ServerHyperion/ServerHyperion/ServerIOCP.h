@@ -133,6 +133,7 @@ public:
 
 		//Accepter 쓰레드를 종요한다.
 		m_bIsAccepterRun = false;
+		m_ConVar.notify_all();
 		closesocket(m_ListenSocket);
 
 		if (mAccepterThread.joinable())
@@ -206,7 +207,7 @@ private:
 	void WokerThread()
 	{
 		//CompletionKey를 받을 포인터 변수
-		stClientInfo* pClientInfo = nullptr;
+		shared_ptr<stClientInfo> pClientInfo = nullptr;
 		//함수 호출 성공 여부
 		BOOL bSuccess = TRUE;
 		//Overlapped I/O작업에서 전송된 데이터 크기
@@ -296,6 +297,11 @@ private:
 
 	void AccepterThread()
 	{
+		for (shared_ptr<stClientInfo> Elem : m_ClientInfoPool)
+		{
+			Elem->PostAccept(m_ListenSocket, 0);
+		}
+
 		shared_ptr<stClientInfo> pCliInfo;
 		while (m_bIsAccepterRun)
 		{
@@ -310,10 +316,15 @@ private:
 					continue;
 			}
 
-			thread([=]() 
+			thread([=]() mutable
 				{
 					this_thread::sleep_for(chrono::seconds(RE_USE_SESSION_WAIT_TIMESEC));
-					pCliInfo->PostAccept(m_ListenSocket, 0);
+					
+					if (pCliInfo)
+					{
+						pCliInfo->PostAccept(m_ListenSocket, 0);
+						m_ClientInfoPool.Return(pCliInfo);
+					}
 				}).detach();
 		}
 	}
