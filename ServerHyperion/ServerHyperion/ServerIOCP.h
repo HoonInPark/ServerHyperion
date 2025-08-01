@@ -302,11 +302,12 @@ private:
 			{
 				unique_lock<mutex> Lock(m_ConVarLock);
 				m_ConVar.wait(Lock, [this] 
-					{ 
-						return !m_ClosedSessionQ.IsEmpty() /*|| !m_bIsAccepterRun*/; // == false, it sleeps
+					{
+						return !m_ClosedSessionQ.IsEmpty() || !m_bIsAccepterRun; // if false, it sleeps
 					});
 
-				m_ClosedSessionQ.Dequeue(pCliInfo);
+				if (!m_ClosedSessionQ.Dequeue(pCliInfo))
+					continue;
 			}
 
 			thread([=]() 
