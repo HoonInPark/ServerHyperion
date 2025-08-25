@@ -8,7 +8,7 @@
 #include <thread>
 #include <vector>
 #include <unordered_set>
-#include <coroutine>
+#include <unordered_map>
 
 class IOCPServer
 {
@@ -115,7 +115,7 @@ public:
 	//생성되어있는 쓰레드를 파괴한다.
 	virtual void CleanupThread()
 	{
-		m_IsWorkerRun = false;
+		m_bIsWorkerRun = false;
 
 		for (auto& th : m_IOWorkerThreads)
 		{
@@ -152,7 +152,8 @@ private:
 			auto pCliInfo = make_shared<stClientInfo>();
 			pCliInfo->Init(i, m_IOCPHandle);
 			pCliInfo->PostAccept(m_ListenSocket);
-			m_ClientInfoPool.insert(pCliInfo);
+
+			m_ClientInfoPool.emplace(i, pCliInfo);
 		}
 	}
 
@@ -170,14 +171,6 @@ private:
 		return true;
 	}
 
-	inline shared_ptr<stClientInfo> GetEmptyClientInfo()
-	{
-		auto RetPtr = *m_ClientInfoPool.begin();
-		m_ClientInfoPool.erase(m_ClientInfoPool.begin());
-
-		return RetPtr;
-	}
-
 	//Overlapped I/O작업에 대한 완료 통보를 받아 그에 해당하는 처리를 하는 함수
 	void WokerThread()
 	{
@@ -190,7 +183,7 @@ private:
 		//I/O 작업을 위해 요청한 Overlapped 구조체를 받을 포인터
 		LPOVERLAPPED lpOverlapped = NULL;
 
-		while (m_IsWorkerRun)
+		while (m_bIsWorkerRun)
 		{
 			bSuccess = GetQueuedCompletionStatus(
 				m_IOCPHandle,
@@ -202,7 +195,7 @@ private:
 			//사용자 쓰레드 종료 메세지 처리..
 			if (TRUE == bSuccess && 0 == dwIoSize && NULL == lpOverlapped)
 			{
-				m_IsWorkerRun = false;
+				m_bIsWorkerRun = false;
 				continue;
 			}
 
@@ -225,14 +218,10 @@ private:
 			{
 			case IOOperation::IO_ACCEPT:
 			{
-				//pCliInfo = GetClientInfo(pOverlappedEx->SessionIndex);
+				pCliInfo = GetClientInfo(pOverlappedEx->SessionIndex);
 				if (pCliInfo->AcceptCompletion())
 				{
-					//클라이언트 갯수 증가
-					/*
-					++mClientCnt;
 					OnConnect(pCliInfo->GetIndex());
-					*/
 				}
 				else
 				{
@@ -272,25 +261,38 @@ private:
 				if (pCliInfo)
 				{
 					pCliInfo->PostAccept(m_ListenSocket);
-					m_ClientInfoPool.insert(pCliInfo);
+					m_ClientInfoPool.emplace(pCliInfo->GetIndex(), pCliInfo);
 				}
 			}).detach();
 	}
 
 protected:
-	stClientInfo* GetClientInfo(const UINT32 sessionIndex)
+	shared_ptr<stClientInfo> GetClientInfo(const UINT32 sessionIndex)
 	{
-		//return m_ClientInfos[sessionIndex];
+		auto it = m_ClientInfoPool.find(sessionIndex);
+		if (it == m_ClientInfoPool.end())
+			return nullptr;
+		else
+			return (*it).second;
 	}
+	
+	/*
+	inline shared_ptr<stClientInfo> GetEmptyClientInfo()
+	{
+		auto it = m_ClientInfoPool.begin();
+		if (it == m_ClientInfoPool.end()) return nullptr;
 
+		auto RetPtr = *it;
+		m_ClientInfoPool.erase(m_ClientInfoPool.begin());
+
+		return RetPtr;
+	}
+	*/
 
 	UINT32 MaxIOWorkerThreadCount{ 0 };
 
 	//클라이언트의 접속을 받기위한 리슨 소켓
 	SOCKET		m_ListenSocket{ INVALID_SOCKET };
-
-	//접속 되어있는 클라이언트 수
-	int			mClientCnt = 0;
 
 	//IO Worker 스레드
 	vector<thread> m_IOWorkerThreads;
@@ -302,12 +304,12 @@ protected:
 	HANDLE		m_IOCPHandle{ INVALID_HANDLE_VALUE };
 
 	//작업 쓰레드 동작 플래그
-	bool		m_IsWorkerRun{ true };
+	bool		m_bIsWorkerRun{ true };
 
 	//접속 쓰레드 동작 플래그
 	bool		m_bIsAccepterRun{ true };
 
 protected:
-	unordered_set<shared_ptr<stClientInfo>> m_ClientInfoPool;
-	unordered_set<shared_ptr<stClientInfo>> m_ConnectedClientInfos;
+	unordered_map<UINT32, shared_ptr<stClientInfo>> m_ClientInfoPool;
+	unordered_map<UINT32, shared_ptr<stClientInfo>> m_ConnectedClientInfos;
 };
