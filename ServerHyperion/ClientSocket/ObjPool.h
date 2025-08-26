@@ -47,13 +47,12 @@ inline ObjPool<T>::ObjPool(size_t _InInitSize, P&&... _Params)
 
 template<typename T>
 inline shared_ptr<T> ObjPool<T>::Acquire()
-{
-	if (m_Data.IsEmpty()) 
-		return nullptr;
-	
+{	
 	shared_ptr<T> RetPtr;
-	m_Data.Dequeue(RetPtr);
-	return RetPtr;
+	if (m_Data.Dequeue(RetPtr))
+		return RetPtr;
+	else
+		return nullptr;
 }
 
 template<typename T>

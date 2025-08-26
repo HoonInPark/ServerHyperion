@@ -6,13 +6,12 @@
 #include <vector>
 #include <thread>
 #include <mutex>
-#include <queue>
 
 #include "ObjPool.h"
 
 using namespace std;
 
-#define PUBLIC_PACK_POOL_SIZE 300
+#define PUBLIC_PACK_POOL_SIZE 512
 
 /// <summary>
 /// in ServerHyperion, we wrote game logics rather than low level network pocess...
@@ -31,7 +30,7 @@ public:
 		// send init packet to client
 		m_Lock.lock();
 
-		shared_ptr<Packet> pPack = m_pPackPool->Acquire();
+		shared_ptr<Packet> pPack = m_PackPool.Acquire();
 		if (!pPack)
 		{
 			m_Lock.unlock();
@@ -42,7 +41,7 @@ public:
 		pPack->SetMsgType(MsgType::MSG_INIT);
 		pPack->SetSessionIdx(clientIndex_);
 
-		m_pPackQ->push(pPack);
+		m_PackQ.Enqueue(pPack);
 
 		m_Lock.unlock();
 	}
@@ -51,7 +50,7 @@ public:
 	{
 		m_Lock.lock();
 
-		shared_ptr<Packet> pPack = m_pPackPool->Acquire();
+		shared_ptr<Packet> pPack = m_PackPool.Acquire();
 		if (!pPack)
 		{
 			m_Lock.unlock();
@@ -62,7 +61,7 @@ public:
 		pPack->SetMsgType(MsgType::MSG_CLOSE);
 		pPack->SetSessionIdx(clientIndex_);
 
-		m_pPackQ->push(pPack);
+		m_PackQ.Enqueue(pPack);
 
 		m_Lock.unlock();
 
@@ -73,7 +72,7 @@ public:
 	{
 		m_Lock.lock();
 
-		shared_ptr<Packet> pPack = m_pPackPool->Acquire();
+		shared_ptr<Packet> pPack = m_PackPool.Acquire();
 		if (!pPack)
 		{
 			m_Lock.unlock();
@@ -84,7 +83,7 @@ public:
 		if (pPack->Read(pData_, size_))
 		{
 			//printf("[OnReceive] 클라이언트: Index(%d), dataSize(%d)\n", clientIndex_, size_);
-			m_pPackQ->push(pPack);
+			m_PackQ.Enqueue(pPack);
 		}
 		else printf("[OnReceive] Read Bin Data Failed");
 
@@ -93,8 +92,8 @@ public:
 
 	void Run(const UINT32 maxClient)
 	{
-		m_pPackPool = new ObjPool<Packet>(PUBLIC_PACK_POOL_SIZE);
-		m_pPackQ = new queue<shared_ptr< Packet >>();
+		m_PackPool = ObjPool<Packet>(PUBLIC_PACK_POOL_SIZE);
+		m_PackQ = StlCircularQueue<shared_ptr< Packet >>(PUBLIC_PACK_POOL_SIZE);
 
 		m_bIsRunProcThread = true;
 		mProcessThread = thread( // lambda bind here use onlu a thread
@@ -123,9 +122,6 @@ public:
 	{
 		IOCPServer::End();
 		CleanupThread();
-
-		delete m_pPackQ;
-		delete m_pPackPool;
 	}
 
 private:
@@ -138,66 +134,49 @@ private:
 
 		while (m_bIsRunProcThread)
 		{
-			m_Lock.lock();
-
-			if (m_pPackQ->empty())
+			if (!m_PackQ.Dequeue(pPack))
 			{
-				m_Lock.unlock();
 				this_thread::sleep_for(chrono::milliseconds(1)); // made it wait, not sleeping for arbitrary time
-
 				continue;
 			}
 
-			pPack = m_pPackQ->front();
-			m_pPackQ->pop();
-			m_Lock.unlock();
-
 			Size = pPack->Write(pStart);
-			/*
+			
 			switch (pPack->GetMsgType())
 			{
 			case MsgType::MSG_INIT:
 			{
-				for (int i = 0; i < m_ClientInfos.size(); ++i)
-				{
-					if (0 == m_ClientInfos[i]->IsConnected()) continue; // if IsInited is 0, also IsConnected is 0, so skip
-					SendMsg(i, Size, pStart);
-				}
+				for (const auto ConCliInfo : m_ConnectedClientInfos)
+					SendMsg(ConCliInfo.first, Size, pStart);
 
-				m_Lock.lock();
-				m_pPackPool->Return(pPack);
-				m_Lock.unlock();
+				m_PackPool.Return(pPack);
 
 				continue;
 			}
 			case MsgType::MSG_GAME:
 			{
-				for (int i = 0; i < m_ClientInfos.size(); ++i)
+				for (const auto ConCliInfo : m_ConnectedClientInfos)
 				{
-					if (0 == m_ClientInfos[i]->IsInited()) continue; // if IsInited is 0, also IsConnected is 0, so skip
-					if (pPack->GetSessionIdx() != i)
+					if (0 == ConCliInfo.second->IsInited()) continue; // 이 if 문 어떻게 없앨 수 없을까?
+					if (pPack->GetSessionIdx() != ConCliInfo.first)
 					{
-						SendMsg(i, Size, pStart);
+						SendMsg(ConCliInfo.first, Size, pStart);
 					}
 				}
 
-				m_Lock.lock();
-				m_pPackPool->Return(pPack);
-				m_Lock.unlock();
+				m_PackPool.Return(pPack);
 
 				continue;
 			}
 			case MsgType::MSG_CLOSE:
 			{
-				for (int i = 0; i < m_ClientInfos.size(); ++i)
+				for (const auto ConCliInfo : m_ConnectedClientInfos)
 				{
-					if (0 == m_ClientInfos[i]->IsInited()) continue; // if IsInited is 0, also IsConnected is 0, so skip
-					SendMsg(i, Size, pStart);
+					if (0 == ConCliInfo.second->IsInited()) continue; // if IsInited is 0, also IsConnected is 0, so skip
+					SendMsg(ConCliInfo.first, Size, pStart);
 				}
 
-				m_Lock.lock();
-				m_pPackPool->Return(pPack);
-				m_Lock.unlock();
+				m_PackPool.Return(pPack);
 
 				continue;
 			}
@@ -207,7 +186,6 @@ private:
 				break;
 			}
 			}
-			*/
 		}
 	}
 
@@ -217,6 +195,7 @@ private:
 
 	mutex m_Lock;
 
-	ObjPool<Packet>* m_pPackPool{ nullptr };
-	queue <shared_ptr< Packet >>* m_pPackQ{ nullptr };
+	ObjPool<Packet> m_PackPool;
+	StlCircularQueue <shared_ptr< Packet >> m_PackQ;
+
 };

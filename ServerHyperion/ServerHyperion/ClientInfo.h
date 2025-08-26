@@ -17,6 +17,7 @@ public:
 		m_Socket = INVALID_SOCKET;
 
 		m_SendDataPool = ObjPool<stOverlappedEx>(64);
+		m_SendDataQ = StlCircularQueue<shared_ptr< stOverlappedEx >>(64);
 	}
 
 	void Init(const UINT32 index, HANDLE iocpHandle_)

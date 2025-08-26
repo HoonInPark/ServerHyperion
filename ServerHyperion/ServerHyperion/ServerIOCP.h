@@ -218,15 +218,15 @@ private:
 			{
 			case IOOperation::IO_ACCEPT:
 			{
-				pCliInfo = GetClientInfo(pOverlappedEx->SessionIndex);
+				pCliInfo = GetEmptyClientInfo(pOverlappedEx->SessionIndex);
+
+				m_ClientInfoPool.erase(pCliInfo->GetIndex());
+				m_ConnectedClientInfos.emplace(make_pair(pCliInfo->GetIndex(), pCliInfo));
+
 				if (pCliInfo->AcceptCompletion())
-				{
 					OnConnect(pCliInfo->GetIndex());
-				}
 				else
-				{
 					CloseSocket(pCliInfo, true);
-				}
 
 				break;
 			}
@@ -267,7 +267,7 @@ private:
 	}
 
 protected:
-	shared_ptr<stClientInfo> GetClientInfo(const UINT32 sessionIndex)
+	shared_ptr<stClientInfo> GetEmptyClientInfo(const UINT32 sessionIndex)
 	{
 		auto it = m_ClientInfoPool.find(sessionIndex);
 		if (it == m_ClientInfoPool.end())
@@ -275,19 +275,15 @@ protected:
 		else
 			return (*it).second;
 	}
-	
-	/*
-	inline shared_ptr<stClientInfo> GetEmptyClientInfo()
+
+	shared_ptr<stClientInfo> GetClientInfo(const UINT32 sessionIndex)
 	{
-		auto it = m_ClientInfoPool.begin();
-		if (it == m_ClientInfoPool.end()) return nullptr;
-
-		auto RetPtr = *it;
-		m_ClientInfoPool.erase(m_ClientInfoPool.begin());
-
-		return RetPtr;
+		auto it = m_ConnectedClientInfos.find(sessionIndex);
+		if (it == m_ConnectedClientInfos.end())
+			return nullptr;
+		else
+			return (*it).second;
 	}
-	*/
 
 	UINT32 MaxIOWorkerThreadCount{ 0 };
 
