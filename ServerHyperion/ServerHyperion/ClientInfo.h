@@ -246,7 +246,7 @@ private:
 	bool SendIO()
 	{
 		shared_ptr<stOverlappedEx> sendOverlappedEx;
-		m_SendDataQ.Dequeue(sendOverlappedEx);
+		m_SendDataQ.Peek(sendOverlappedEx);
 
 		DWORD dwRecvNumBytes = 0;
 		int nRet = WSASend(

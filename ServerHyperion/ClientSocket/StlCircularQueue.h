@@ -135,7 +135,7 @@ public:
 
 		if (CurrentHead != Tail.load())
 		{
-			Head.Store(Buffer.GetNextIndex(CurrentHead));
+			Head.store(Buffer.GetNextIndex(CurrentHead));
 
 			return true;
 		}
