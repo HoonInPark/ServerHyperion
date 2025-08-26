@@ -240,8 +240,8 @@ public:
 			break;
 		}
 
-		m_SendDataPool.Return(pSendOverlappedEx);
 		m_SendDataQ.pop();
+		m_SendDataPool.Return(pSendOverlappedEx);
 
 		if (!m_SendDataQ.empty())
 		{
