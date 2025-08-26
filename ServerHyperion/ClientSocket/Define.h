@@ -59,4 +59,3 @@ struct stOverlappedEx
 	IOOperation		m_eOperation;			//작업 동작 종류
 	UINT32			SessionIndex = 0;
 };
-
