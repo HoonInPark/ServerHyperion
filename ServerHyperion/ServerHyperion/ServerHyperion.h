@@ -8,6 +8,7 @@
 #include <mutex>
 
 #include "ObjPool.h"
+#include "mpmc_bounded_queue.h"
 
 using namespace std;
 
