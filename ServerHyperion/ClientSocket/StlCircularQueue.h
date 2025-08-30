@@ -61,11 +61,12 @@ public:
 	template<class ...P>
 	StlCircularQueue(uint32 CapacityPlusOne = 0, P&&... _Params)
 		: Buffer(CapacityPlusOne, forward<P>(_Params)...)
-		, Head(0)
-		, Tail(0)
 	{
+		Head.store(0, memory_order_relaxed);
+		Tail.store(0, memory_order_relaxed);
 	}
 
+	// TODO : if it called in busy process, it cannot guarantee its data's coherency
 	__forceinline StlCircularQueue& operator=(const StlCircularQueue& _InCirQ)
 	{
 		if (this == &_InCirQ) return *this;
