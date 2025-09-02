@@ -147,9 +147,11 @@ public:
 private:
 	void CreateClient(const UINT32 maxClientCount)
 	{
+		m_SendBufVec.resize(maxClientCount);
+		
 		for (UINT32 i = 0; i < maxClientCount; ++i)
 		{
-			auto pCliInfo = make_shared<stClientInfo>();
+			auto pCliInfo = make_shared<stClientInfo>(m_SendBufVec[i]);
 			pCliInfo->Init(i, m_IOCPHandle);
 			pCliInfo->PostAccept(m_ListenSocket);
 
@@ -306,6 +308,8 @@ protected:
 	bool		m_bIsAccepterRun{ true };
 
 protected:
+	vector <atomic< shared_ptr<stOverlappedEx >> > m_SendBufVec;
+
 	unordered_map<UINT32, shared_ptr<stClientInfo>> m_ClientInfoPool;
 	unordered_map<UINT32, shared_ptr<stClientInfo>> m_ConnectedClientInfos;
 };

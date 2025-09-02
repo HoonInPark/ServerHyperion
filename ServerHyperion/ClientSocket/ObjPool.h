@@ -19,45 +19,28 @@ template <typename T>
 class ObjPool
 {
 public:
-	ObjPool() = default;
-
 	template <class... P>
-	ObjPool(size_t _InInitSize, P&&... params);
+	ObjPool(size_t _InInitSize, P&&... _Params)
+		: m_Data(_InInitSize, forward<P>(_Params)...)
+	{
+	}
 
-	shared_ptr<T> Acquire();
-	void Return(shared_ptr<T>& _pInElem);	
-
-	inline auto begin() const { return m_Data.begin(); }
-	inline auto end() const { return m_Data.end(); }
+	bool Acquire(shared_ptr<T>& _OutRetPtr);
+	bool Return(const shared_ptr<T>& _pInElem);
 
 private:
-	StlCircularQueue <shared_ptr< T >> m_Data;
+	StlCircularQueue<T> m_Data;
 };
 
 template<typename T>
-template<class ...P>
-inline ObjPool<T>::ObjPool(size_t _InInitSize, P&&... _Params)
-	: m_Data(StlCircularQueue<shared_ptr<T>>(_InInitSize))
+inline bool ObjPool<T>::Acquire(shared_ptr<T>& _OutRetPtr)
 {	
-	for (size_t i = 0; i < _InInitSize; ++i)
-	{
-		m_Data.Enqueue(make_shared<T>(forward<P>(_Params)...));
-	}
+	return m_Data.dequeue(_OutRetPtr);
 }
 
 template<typename T>
-inline shared_ptr<T> ObjPool<T>::Acquire()
-{	
-	shared_ptr<T> RetPtr;
-	if (m_Data.Dequeue(RetPtr))
-		return RetPtr;
-	else
-		return nullptr;
-}
-
-template<typename T>
-inline void ObjPool<T>::Return(shared_ptr<T>& _pInElem)
+inline bool ObjPool<T>::Return(const shared_ptr<T>& _pInElem)
 {
-	m_Data.Enqueue(_pInElem);
+	return m_Data.enqueue(_pInElem);
 }
 

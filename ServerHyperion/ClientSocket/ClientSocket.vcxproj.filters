@@ -24,13 +24,7 @@
     <ClInclude Include="Define.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="StlCircularBuffer.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
     <ClInclude Include="StlCircularQueue.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="mpmc_bounded_queue.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>

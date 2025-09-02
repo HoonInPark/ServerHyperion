@@ -8,6 +8,7 @@
 #define SERVERHYPERION_API __declspec(dllimport)
 #endif
 
+#include <iostream>
 #include <cassert>
 #include <atomic>
 #include <vector>
@@ -19,11 +20,13 @@ template<typename T>
 class StlCircularQueue
 {
 public:
-	template<class ...P>
-	StlCircularQueue(size_t buffer_size, P&&... _Params)
-		: buffer_(buffer_size, cell_t(forward<P>(_Params)...))
+	template<class ...U>
+	StlCircularQueue(size_t buffer_size, U&&... _Params)
+		: buffer_(buffer_size, cell_t<T>(forward<U>(_Params)...))
 		, buffer_mask_(buffer_size - 1)
 	{
+		assert((buffer_size >= 2) && ((buffer_size & (buffer_size - 1)) == 0));
+
 		for (size_t i = 0; i != buffer_size; i += 1)
 			buffer_[i].sequence_.store(i, memory_order_relaxed);
 
@@ -35,9 +38,9 @@ public:
 	{
 	}
 
-	bool enqueue(T const& data)
+	bool enqueue(const shared_ptr<T>& data)
 	{
-		cell_t* cell;
+		cell_t<T>* cell;
 		size_t pos = enqueue_pos_.load(memory_order_relaxed);
 
 		for (;;)
@@ -69,9 +72,9 @@ public:
 		return true;
 	}
 
-	bool dequeue(T& data)
+	bool dequeue(shared_ptr<T>& data)
 	{
-		cell_t* cell;
+		cell_t<T>* cell;
 		size_t pos = dequeue_pos_.load(memory_order_relaxed);
 
 		for (;;)
@@ -92,27 +95,27 @@ public:
 		}
 
 		data = cell->data_;
+		cell->data_ = nullptr;
 		cell->sequence_.store(pos + buffer_mask_ + 1, memory_order_release);
 
 		return true;
 	}
 
 private:
+	template <typename Q>
 	struct cell_t
 	{
-		cell_t() = default;
-
 		template<class ...P>
-		explicit cell_t(P&&... args)
-			: data_(std::forward<P>(args)...)
+		explicit cell_t(P&&... _Params)
+			: data_(make_shared<Q>(forward<P>(_Params)...))
 		{
 		}
 
 		atomic<size_t>		sequence_;
-		T					data_;
+		shared_ptr<Q>		data_;
 	};
 
-	vector<cell_t>          buffer_;
+	vector<cell_t<T>>       buffer_;
 	atomic<size_t>			enqueue_pos_;
 	atomic<size_t>			dequeue_pos_;
 

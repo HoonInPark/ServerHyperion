@@ -5,10 +5,6 @@
 
 #include <vector>
 #include <thread>
-#include <mutex>
-
-#include "ObjPool.h"
-#include "mpmc_bounded_queue.h"
 
 using namespace std;
 
@@ -29,12 +25,10 @@ public:
 		printf("[OnConnect] 클라이언트: Index(%d)\n", clientIndex_);
 
 		// send init packet to client
-		m_Lock.lock();
 
-		shared_ptr<Packet> pPack = m_PackPool.Acquire();
-		if (!pPack)
+		shared_ptr<Packet> pPack = nullptr;
+		if (!m_pPackPool->dequeue(pPack))
 		{
-			m_Lock.unlock();
 			printf("[OnConnect] : PackPool Error");
 			return;
 		}
@@ -42,19 +36,14 @@ public:
 		pPack->SetMsgType(MsgType::MSG_INIT);
 		pPack->SetSessionIdx(clientIndex_);
 
-		m_PackQ.Enqueue(pPack);
-
-		m_Lock.unlock();
+		m_pPackQ->enqueue(pPack);
 	}
 
 	virtual void OnClose(const UINT32 clientIndex_) override
 	{
-		m_Lock.lock();
-
-		shared_ptr<Packet> pPack = m_PackPool.Acquire();
-		if (!pPack)
+		shared_ptr<Packet> pPack = nullptr;
+		if (!m_pPackPool->dequeue(pPack))
 		{
-			m_Lock.unlock();
 			printf("[OnConnect] : PackPool Error");
 			return;
 		}
@@ -62,21 +51,16 @@ public:
 		pPack->SetMsgType(MsgType::MSG_CLOSE);
 		pPack->SetSessionIdx(clientIndex_);
 
-		m_PackQ.Enqueue(pPack);
-
-		m_Lock.unlock();
+		m_pPackQ->enqueue(pPack);
 
 		printf("[OnClose] : Index(%d)\n", clientIndex_);
 	}
 
 	virtual void OnReceive(const UINT32 clientIndex_, const UINT32 size_, char* pData_) override
 	{
-		m_Lock.lock();
-
-		shared_ptr<Packet> pPack = m_PackPool.Acquire();
-		if (!pPack)
+		shared_ptr<Packet> pPack = nullptr;
+		if (!m_pPackPool->dequeue(pPack))
 		{
-			m_Lock.unlock();
 			printf("[OnReceive] : PackPool Error");
 			return;
 		}
@@ -84,17 +68,15 @@ public:
 		if (pPack->Read(pData_, size_))
 		{
 			//printf("[OnReceive] 클라이언트: Index(%d), dataSize(%d)\n", clientIndex_, size_);
-			m_PackQ.Enqueue(pPack);
+			m_pPackQ->enqueue(pPack);
 		}
 		else printf("[OnReceive] Read Bin Data Failed");
-
-		m_Lock.unlock();
 	}
 
 	void Run(const UINT32 maxClient)
 	{
-		m_PackPool = ObjPool<Packet>(PUBLIC_PACK_POOL_SIZE);
-		m_PackQ = StlCircularQueue<shared_ptr< Packet >>(PUBLIC_PACK_POOL_SIZE);
+		m_pPackPool = new StlCircularQueue<Packet>(PUBLIC_PACK_POOL_SIZE);
+		m_pPackQ = new StlCircularQueue< Packet >(PUBLIC_PACK_POOL_SIZE);
 
 		m_bIsRunProcThread = true;
 		mProcessThread = thread( // lambda bind here use onlu a thread
@@ -135,7 +117,7 @@ private:
 
 		while (m_bIsRunProcThread)
 		{
-			if (!m_PackQ.Dequeue(pPack))
+			if (!m_pPackQ->dequeue(pPack))
 			{
 				this_thread::sleep_for(chrono::milliseconds(1)); // made it wait, not sleeping for arbitrary time
 				continue;
@@ -150,7 +132,7 @@ private:
 				for (const auto ConCliInfo : m_ConnectedClientInfos)
 					SendMsg(ConCliInfo.first, Size, pStart);
 
-				m_PackPool.Return(pPack);
+				m_pPackPool->enqueue(pPack);
 
 				continue;
 			}
@@ -165,7 +147,7 @@ private:
 					}
 				}
 
-				m_PackPool.Return(pPack);
+				m_pPackPool->enqueue(pPack);
 
 				continue;
 			}
@@ -177,7 +159,7 @@ private:
 					SendMsg(ConCliInfo.first, Size, pStart);
 				}
 
-				m_PackPool.Return(pPack);
+				m_pPackPool->enqueue(pPack);
 
 				continue;
 			}
@@ -194,9 +176,7 @@ private:
 
 	thread mProcessThread;
 
-	mutex m_Lock;
-
-	ObjPool<Packet> m_PackPool;
-	StlCircularQueue <shared_ptr< Packet >> m_PackQ;
+	StlCircularQueue<Packet>* m_pPackPool{ nullptr };
+	StlCircularQueue<Packet>* m_pPackQ{ nullptr };
 
 };
