@@ -20,12 +20,18 @@ template<typename T>
 class StlCircularQueue
 {
 public:
-	template<class ...U>
-	StlCircularQueue(size_t buffer_size, U&&... _Params)
-		: buffer_(buffer_size, cell_t<T>(forward<U>(_Params)...))
-		, buffer_mask_(buffer_size - 1)
+	StlCircularQueue(size_t buffer_size)
+		: buffer_mask_(buffer_size - 1)
 	{
 		assert((buffer_size >= 2) && ((buffer_size & (buffer_size - 1)) == 0));
+
+		/*
+		buffer_.reserve(buffer_size);
+		for (size_t i = 0; i < buffer_size; ++i)
+			buffer_.emplace_back();
+		*/
+		
+		buffer_ = new cell_t[buffer_size];
 
 		for (size_t i = 0; i != buffer_size; i += 1)
 			buffer_[i].sequence_.store(i, memory_order_relaxed);
@@ -36,11 +42,12 @@ public:
 
 	~StlCircularQueue()
 	{
+		delete[] buffer_;
 	}
 
 	bool enqueue(const shared_ptr<T>& data)
 	{
-		cell_t<T>* cell;
+		cell_t* cell;
 		size_t pos = enqueue_pos_.load(memory_order_relaxed);
 
 		for (;;)
@@ -74,7 +81,7 @@ public:
 
 	bool dequeue(shared_ptr<T>& data)
 	{
-		cell_t<T>* cell;
+		cell_t* cell;
 		size_t pos = dequeue_pos_.load(memory_order_relaxed);
 
 		for (;;)
@@ -102,20 +109,14 @@ public:
 	}
 
 private:
-	template <typename Q>
 	struct cell_t
 	{
-		template<class ...P>
-		explicit cell_t(P&&... _Params)
-			: data_(make_shared<Q>(forward<P>(_Params)...))
-		{
-		}
-
 		atomic<size_t>		sequence_;
-		shared_ptr<Q>		data_;
+		shared_ptr<T>		data_;
 	};
 
-	vector<cell_t<T>>       buffer_;
+	//vector<cell_t>			buffer_;
+	cell_t*					buffer_;
 	atomic<size_t>			enqueue_pos_;
 	atomic<size_t>			dequeue_pos_;
 

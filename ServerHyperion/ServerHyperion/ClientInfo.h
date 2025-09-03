@@ -17,6 +17,9 @@ public:
 		m_Socket = INVALID_SOCKET;
 
 		m_pSendDataPool = new StlCircularQueue<stOverlappedEx>(64);
+		for (int i = 0; i < 64; ++i)
+			m_pSendDataPool->enqueue(make_shared<stOverlappedEx>());
+
 		m_pSendBufQ = new StlCircularQueue<stOverlappedEx>(64);
 	}
 
@@ -194,12 +197,12 @@ public:
 		pSendOverlappedEx->m_eOperation = IOOperation::IO_SEND;
 
 		m_pSendBufQ->enqueue(pSendOverlappedEx);
-		if (nullptr == m_OverlappedEx.load(memory_order_relaxed)) // ????
+		if (nullptr == m_OverlappedEx.load(memory_order_relaxed))
 		{
 			shared_ptr<stOverlappedEx> pFirstSendOverlappedEx;
 			if (m_pSendBufQ->dequeue(pFirstSendOverlappedEx))
 			{
-				m_OverlappedEx.store(pFirstSendOverlappedEx, memory_order_acq_rel);
+				m_OverlappedEx.exchange(pFirstSendOverlappedEx, memory_order_acq_rel);
 				SendIO(pFirstSendOverlappedEx);
 			}
 		}
@@ -242,7 +245,7 @@ public:
 		shared_ptr<stOverlappedEx> pNextSendOverlappedEx;
 		if (m_pSendBufQ->dequeue(pNextSendOverlappedEx))
 		{
-			m_OverlappedEx.store(pNextSendOverlappedEx, memory_order_acq_rel);
+			m_OverlappedEx.exchange(pNextSendOverlappedEx, memory_order_acq_rel);
 			SendIO(pNextSendOverlappedEx);
 		}
 		else

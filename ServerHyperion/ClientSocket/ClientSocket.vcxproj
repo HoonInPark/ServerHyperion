@@ -154,7 +154,6 @@ xcopy /Y /I "$(SolutionDir)x64\Release\$(ProjectName).lib" "C:\Unreal\Projects\H
   <ItemGroup>
     <ClInclude Include="Define.h" />
     <ClInclude Include="StlCircularQueue.h" />
-    <ClInclude Include="ObjPool.h" />
     <ClInclude Include="Packet.h" />
   </ItemGroup>
   <ItemGroup>

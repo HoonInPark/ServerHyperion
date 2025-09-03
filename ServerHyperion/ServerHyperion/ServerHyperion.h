@@ -76,6 +76,9 @@ public:
 	void Run(const UINT32 maxClient)
 	{
 		m_pPackPool = new StlCircularQueue<Packet>(PUBLIC_PACK_POOL_SIZE);
+		for (int i = 0; i < PUBLIC_PACK_POOL_SIZE; ++i)
+			m_pPackPool->enqueue(make_shared<Packet>());
+
 		m_pPackQ = new StlCircularQueue< Packet >(PUBLIC_PACK_POOL_SIZE);
 
 		m_bIsRunProcThread = true;

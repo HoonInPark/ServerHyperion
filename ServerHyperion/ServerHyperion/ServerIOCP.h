@@ -7,6 +7,7 @@
 #include "Define.h"
 #include <thread>
 #include <vector>
+#include <memory>
 #include <unordered_set>
 #include <unordered_map>
 
@@ -147,7 +148,15 @@ public:
 private:
 	void CreateClient(const UINT32 maxClientCount)
 	{
-		m_SendBufVec.resize(maxClientCount);
+		m_SendBufVec = new atomic< shared_ptr<stOverlappedEx >>[maxClientCount];
+		for (UINT32 i = 0; i < maxClientCount; ++i)
+			m_SendBufVec[i].store(nullptr, memory_order_relaxed);
+
+		/*
+		m_SendBufVec.reserve(maxClientCount);
+		for (UINT32 i = 0; i < maxClientCount; ++i)
+			m_SendBufVec.emplace_back(nullptr);
+		*/
 		
 		for (UINT32 i = 0; i < maxClientCount; ++i)
 		{
@@ -308,7 +317,8 @@ protected:
 	bool		m_bIsAccepterRun{ true };
 
 protected:
-	vector <atomic< shared_ptr<stOverlappedEx >> > m_SendBufVec;
+	//vector <atomic< shared_ptr<stOverlappedEx >> > m_SendBufVec;
+	atomic< shared_ptr<stOverlappedEx >>* m_SendBufVec;
 
 	unordered_map<UINT32, shared_ptr<stClientInfo>> m_ClientInfoPool;
 	unordered_map<UINT32, shared_ptr<stClientInfo>> m_ConnectedClientInfos;
