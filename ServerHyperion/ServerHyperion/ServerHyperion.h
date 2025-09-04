@@ -140,7 +140,6 @@ private:
 				{
 					if (SESSION_STATUS::DISCONN == ConnCliInfo.second->GetStatus()) continue;
 					ConnCliInfo.second->SendMsg(Size, pStart);
-					//SendMsg(ConnCliInfo.first, Size, pStart);
 				}
 
 				break;
@@ -155,7 +154,6 @@ private:
 					if (pPack->GetSessionIdx() != ConnCliInfo.first)
 					{
 						ConnCliInfo.second->SendMsg(Size, pStart);
-						//SendMsg(ConnCliInfo.first, Size, pStart);
 					}
 				}
 
@@ -167,7 +165,6 @@ private:
 				{
 					if (SESSION_STATUS::INITED != ConnCliInfo.second->GetStatus()) continue;
 					ConnCliInfo.second->SendMsg(Size, pStart);
-					//SendMsg(ConnCliInfo.first, Size, pStart);
 				}
 
 				break;
