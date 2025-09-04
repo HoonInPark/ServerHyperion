@@ -154,7 +154,7 @@ public:
 private:
 	void CreateClient(const UINT32 maxClientCount)
 	{
-		m_SendBufArr = new atomic< shared_ptr<stOverlappedEx >>[maxClientCount];
+		m_SendBufArr = new atomic< shared_ptr<OverlappedEx >>[maxClientCount];
 		for (UINT32 i = 0; i < maxClientCount; ++i)
 			m_SendBufArr[i].store(nullptr, memory_order_relaxed);
 
@@ -166,7 +166,7 @@ private:
 		
 		for (UINT32 i = 0; i < maxClientCount; ++i)
 		{
-			auto pCliInfo = make_shared<stClientInfo>(m_SendBufArr[i]);
+			auto pCliInfo = make_shared<ClientInfo>(m_SendBufArr[i]);
 			pCliInfo->Init(i, m_IOCPHandle);
 			pCliInfo->PostAccept(m_ListenSocket);
 
@@ -192,7 +192,7 @@ private:
 	void WokerThread()
 	{
 		//CompletionKey를 받을 포인터 변수
-		shared_ptr<stClientInfo> pCliInfo = nullptr;
+		shared_ptr<ClientInfo> pCliInfo = nullptr;
 		//함수 호출 성공 여부
 		BOOL bSuccess = TRUE;
 		//Overlapped I/O작업에서 전송된 데이터 크기
@@ -221,7 +221,7 @@ private:
 				continue;
 			}
 
-			auto pOverlappedEx = (stOverlappedEx*)lpOverlapped;
+			auto pOverlappedEx = (OverlappedEx*)lpOverlapped;
 
 			//client가 접속을 끊었을때..
 			if (FALSE == bSuccess || (0 == dwIoSize && IOOperation::IO_ACCEPT != pOverlappedEx->m_eOperation))
@@ -265,7 +265,7 @@ private:
 		}
 	}
 
-	void CloseSocket(shared_ptr<stClientInfo> _pInCliInfo, bool bIsForce = false)
+	void CloseSocket(shared_ptr<ClientInfo> _pInCliInfo, bool bIsForce = false)
 	{
 		auto CliIdx = _pInCliInfo->GetIndex();
 
@@ -288,7 +288,7 @@ private:
 	}
 
 protected:
-	shared_ptr<stClientInfo> GetEmptyClientInfo(const UINT32 sessionIndex)
+	shared_ptr<ClientInfo> GetEmptyClientInfo(const UINT32 sessionIndex)
 	{
 		auto it = m_CliInfoPool.find(sessionIndex);
 		if (it == m_CliInfoPool.end())
@@ -326,8 +326,8 @@ protected:
 	bool		m_bIsAccepterRun{ true };
 
 protected:
-	atomic< shared_ptr<stOverlappedEx >>* m_SendBufArr;
+	atomic< shared_ptr<OverlappedEx >>* m_SendBufArr;
 
-	unordered_map<UINT32, shared_ptr<stClientInfo>> m_CliInfoPool;
-	unordered_map<UINT32, shared_ptr<stClientInfo>> m_ConnCliInfos;
+	unordered_map<UINT32, shared_ptr<ClientInfo>> m_CliInfoPool;
+	unordered_map<UINT32, shared_ptr<ClientInfo>> m_ConnCliInfos;
 };

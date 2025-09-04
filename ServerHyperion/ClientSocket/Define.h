@@ -37,9 +37,9 @@ enum class MsgType
 };
 
 //WSAOVERLAPPED구조체를 확장 시켜서 필요한 정보를 더 넣었다.
-struct stOverlappedEx
+struct OverlappedEx
 {
-	stOverlappedEx()
+	OverlappedEx()
 	{
 		m_wsaBuf.buf = new char[Packet::GetMaxPackByteSize()];
 		Init();

@@ -17,25 +17,25 @@ enum SESSION_STATUS
 };
  
 //클라이언트 정보를 담기위한 구조체
-class stClientInfo
+class ClientInfo
 {
 public:
-	stClientInfo(atomic< shared_ptr<stOverlappedEx >>& _InOverlappedEx)
+	ClientInfo(atomic< shared_ptr<OverlappedEx >>& _InOverlappedEx)
 		: m_OverlappedEx(_InOverlappedEx)
 	{
 		m_SessStatus.store(SESSION_STATUS::DISCONN);
 
-		ZeroMemory(&mRecvOverlappedEx, sizeof(stOverlappedEx));
+		ZeroMemory(&mRecvOverlappedEx, sizeof(OverlappedEx));
 		m_Socket = INVALID_SOCKET;
 
-		m_pSendDataPool = new StlCircularQueue<stOverlappedEx>(64);
+		m_pSendDataPool = new StlCircularQueue<OverlappedEx>(64);
 		for (int i = 0; i < 64; ++i)
-			m_pSendDataPool->enqueue(make_shared<stOverlappedEx>());
+			m_pSendDataPool->enqueue(make_shared<OverlappedEx>());
 
-		m_pSendBufQ = new StlCircularQueue<stOverlappedEx>(64);
+		m_pSendBufQ = new StlCircularQueue<OverlappedEx>(64);
 	}
 
-	virtual ~stClientInfo()
+	virtual ~ClientInfo()
 	{
 		delete m_pSendBufQ;
 		delete m_pSendDataPool;
@@ -110,7 +110,7 @@ public:
 			return false;
 		}
 
-		ZeroMemory(&m_AcceptContext, sizeof(stOverlappedEx));
+		ZeroMemory(&m_AcceptContext, sizeof(OverlappedEx));
 
 		DWORD bytes = 0;
 		DWORD flags = 0;
@@ -200,7 +200,7 @@ public:
 	// obj pooling must be implemented
 	bool SendMsg(const UINT32 _InSize, char* _pInMsg)
 	{
-		shared_ptr<stOverlappedEx> pSendOverlappedEx;
+		shared_ptr<OverlappedEx> pSendOverlappedEx;
 		if (!m_pSendDataPool->dequeue(pSendOverlappedEx))
 		{
 			printf("SendMsg Error in Client %d", m_Index);
@@ -215,7 +215,7 @@ public:
 		m_pSendBufQ->enqueue(pSendOverlappedEx);
 		if (nullptr == m_OverlappedEx.load(memory_order_relaxed))
 		{
-			shared_ptr<stOverlappedEx> pFirstSendOverlappedEx;
+			shared_ptr<OverlappedEx> pFirstSendOverlappedEx;
 			if (m_pSendBufQ->dequeue(pFirstSendOverlappedEx))
 			{
 				m_OverlappedEx.exchange(pFirstSendOverlappedEx, memory_order_acq_rel);
@@ -230,7 +230,7 @@ public:
 	{
 		printf("[송신 완료] bytes : %d\n", dataSize_);
 
-		shared_ptr<stOverlappedEx> pSendOverlappedEx = m_OverlappedEx.load(memory_order_relaxed);
+		shared_ptr<OverlappedEx> pSendOverlappedEx = m_OverlappedEx.load(memory_order_relaxed);
 
 		char MsgTypeInBuff = pSendOverlappedEx->m_wsaBuf.buf[static_cast<int>(Packet::Header::MAX)];
 		switch (static_cast<MsgType>(MsgTypeInBuff))
@@ -259,7 +259,7 @@ public:
 
 		m_pSendDataPool->enqueue(pSendOverlappedEx);
 
-		shared_ptr<stOverlappedEx> pNextSendOverlappedEx;
+		shared_ptr<OverlappedEx> pNextSendOverlappedEx;
 		if (m_pSendBufQ->dequeue(pNextSendOverlappedEx))
 		{
 			m_OverlappedEx.exchange(pNextSendOverlappedEx, memory_order_acq_rel);
@@ -272,7 +272,7 @@ public:
 	}
 
 private:
-	bool SendIO(const shared_ptr<stOverlappedEx>  _pInSendOverlappedEx)
+	bool SendIO(const shared_ptr<OverlappedEx>  _pInSendOverlappedEx)
 	{
 		DWORD dwRecvNumBytes = 0;
 		int nRet = WSASend(
@@ -329,14 +329,14 @@ private:
 
 	SOCKET			m_Socket;			//Cliet와 연결되는 소켓
 
-	stOverlappedEx	m_AcceptContext;
+	OverlappedEx	m_AcceptContext;
 	char m_AcceptBuf[64];
 
-	stOverlappedEx	mRecvOverlappedEx;	//IO_RECV Overlapped I/O작업을 위한 변수	
+	OverlappedEx	mRecvOverlappedEx;	//IO_RECV Overlapped I/O작업을 위한 변수	
 	char			mRecvBuf[MAX_SOCK_RECVBUF]; //데이터 버퍼
 
-	atomic< shared_ptr<stOverlappedEx >>& m_OverlappedEx;
+	atomic< shared_ptr<OverlappedEx >>& m_OverlappedEx;
 
-	StlCircularQueue<stOverlappedEx>* m_pSendBufQ;
-	StlCircularQueue<stOverlappedEx>* m_pSendDataPool;
+	StlCircularQueue<OverlappedEx>* m_pSendBufQ;
+	StlCircularQueue<OverlappedEx>* m_pSendDataPool;
 };
