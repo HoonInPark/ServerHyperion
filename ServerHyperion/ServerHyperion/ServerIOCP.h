@@ -14,10 +14,14 @@
 class IOCPServer
 {
 public:
-	IOCPServer(void) {}
-
-	virtual ~IOCPServer(void)
+	IOCPServer() 
 	{
+	}
+
+	virtual ~IOCPServer()
+	{
+		delete[] m_SendBufArr;
+
 		//윈속의 사용을 끝낸다.
 		WSACleanup();
 	}
@@ -135,11 +139,13 @@ public:
 		closesocket(m_ListenSocket);
 	}
 
+	/*
 	bool SendMsg(const UINT32 sessionIndex_, const UINT32 _InDataSize, char* _pInData)
 	{
 		auto pClient = GetClientInfo(sessionIndex_);
 		return pClient->SendMsg(_InDataSize, _pInData);
 	}
+	*/
 
 	virtual void OnConnect(const UINT32 clientIndex_) {}
 	virtual void OnClose(const UINT32 clientIndex_) {}
@@ -148,9 +154,9 @@ public:
 private:
 	void CreateClient(const UINT32 maxClientCount)
 	{
-		m_SendBufVec = new atomic< shared_ptr<stOverlappedEx >>[maxClientCount];
+		m_SendBufArr = new atomic< shared_ptr<stOverlappedEx >>[maxClientCount];
 		for (UINT32 i = 0; i < maxClientCount; ++i)
-			m_SendBufVec[i].store(nullptr, memory_order_relaxed);
+			m_SendBufArr[i].store(nullptr, memory_order_relaxed);
 
 		/*
 		m_SendBufVec.reserve(maxClientCount);
@@ -160,11 +166,11 @@ private:
 		
 		for (UINT32 i = 0; i < maxClientCount; ++i)
 		{
-			auto pCliInfo = make_shared<stClientInfo>(m_SendBufVec[i]);
+			auto pCliInfo = make_shared<stClientInfo>(m_SendBufArr[i]);
 			pCliInfo->Init(i, m_IOCPHandle);
 			pCliInfo->PostAccept(m_ListenSocket);
 
-			m_ClientInfoPool.emplace(i, pCliInfo);
+			m_CliInfoPool.emplace(i, pCliInfo);
 		}
 	}
 
@@ -231,8 +237,8 @@ private:
 			{
 				pCliInfo = GetEmptyClientInfo(pOverlappedEx->SessionIndex);
 
-				m_ClientInfoPool.erase(pCliInfo->GetIndex());
-				m_ConnectedClientInfos.emplace(make_pair(pCliInfo->GetIndex(), pCliInfo));
+				m_CliInfoPool.erase(pCliInfo->GetIndex());
+				m_ConnCliInfos.emplace(pCliInfo->GetIndex(), pCliInfo);
 
 				if (pCliInfo->AcceptCompletion())
 					OnConnect(pCliInfo->GetIndex());
@@ -253,48 +259,54 @@ private:
 				break;
 			}
 			default:
-				printf("Client Index(%d)에서 예외상황\n", pCliInfo->GetIndex());
+				assert(true);
 				break;
 			}
 		}
 	}
 
-	void CloseSocket(shared_ptr<stClientInfo> pCliInfo, bool bIsForce = false)
+	void CloseSocket(shared_ptr<stClientInfo> _pInCliInfo, bool bIsForce = false)
 	{
-		auto clientIndex = pCliInfo->GetIndex();
-		pCliInfo->Close(bIsForce);
-		OnClose(clientIndex);
+		auto CliIdx = _pInCliInfo->GetIndex();
 
-		thread([&, pCliInfo]()
+		m_ConnCliInfos.erase(CliIdx);
+		
+		_pInCliInfo->Close(bIsForce);
+		OnClose(CliIdx);
+
+		thread([&, _pInCliInfo, CliIdx]()
 			{
 				this_thread::sleep_for(chrono::seconds(RE_USE_SESSION_WAIT_TIMESEC));
 
-				if (pCliInfo)
+				if (_pInCliInfo)
 				{
-					pCliInfo->PostAccept(m_ListenSocket);
-					m_ClientInfoPool.emplace(pCliInfo->GetIndex(), pCliInfo);
+					_pInCliInfo->PostAccept(m_ListenSocket);
+					m_CliInfoPool.emplace(CliIdx, _pInCliInfo);
 				}
+
 			}).detach();
 	}
 
 protected:
 	shared_ptr<stClientInfo> GetEmptyClientInfo(const UINT32 sessionIndex)
 	{
-		auto it = m_ClientInfoPool.find(sessionIndex);
-		if (it == m_ClientInfoPool.end())
+		auto it = m_CliInfoPool.find(sessionIndex);
+		if (it == m_CliInfoPool.end())
 			return nullptr;
 		else
 			return (*it).second;
 	}
 
+	/*
 	shared_ptr<stClientInfo> GetClientInfo(const UINT32 sessionIndex)
 	{
-		auto it = m_ConnectedClientInfos.find(sessionIndex);
-		if (it == m_ConnectedClientInfos.end())
+		auto it = m_ConnCliInfos.find(sessionIndex);
+		if (it == m_ConnCliInfos.end())
 			return nullptr;
 		else
 			return (*it).second;
 	}
+	*/
 
 	UINT32 MaxIOWorkerThreadCount{ 0 };
 
@@ -303,9 +315,6 @@ protected:
 
 	//IO Worker 스레드
 	vector<thread> m_IOWorkerThreads;
-
-	//Accept 스레드
-	thread	mAccepterThread;
 
 	//CompletionPort객체 핸들
 	HANDLE		m_IOCPHandle{ INVALID_HANDLE_VALUE };
@@ -317,9 +326,8 @@ protected:
 	bool		m_bIsAccepterRun{ true };
 
 protected:
-	//vector <atomic< shared_ptr<stOverlappedEx >> > m_SendBufVec;
-	atomic< shared_ptr<stOverlappedEx >>* m_SendBufVec;
+	atomic< shared_ptr<stOverlappedEx >>* m_SendBufArr;
 
-	unordered_map<UINT32, shared_ptr<stClientInfo>> m_ClientInfoPool;
-	unordered_map<UINT32, shared_ptr<stClientInfo>> m_ConnectedClientInfos;
+	unordered_map<UINT32, shared_ptr<stClientInfo>> m_CliInfoPool;
+	unordered_map<UINT32, shared_ptr<stClientInfo>> m_ConnCliInfos;
 };

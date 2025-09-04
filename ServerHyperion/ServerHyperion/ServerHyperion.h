@@ -18,7 +18,11 @@ class ServerHyperion : public IOCPServer
 {
 public:
 	ServerHyperion() = default;
-	virtual ~ServerHyperion() = default;
+	virtual ~ServerHyperion()
+	{
+		delete m_pPackPool;
+		delete m_pPackQ;
+	}
 
 	virtual void OnConnect(const UINT32 clientIndex_) override
 	{
@@ -122,7 +126,7 @@ private:
 		{
 			if (!m_pPackQ->dequeue(pPack))
 			{
-				this_thread::sleep_for(chrono::milliseconds(1)); // made it wait, not sleeping for arbitrary time
+				this_thread::sleep_for(chrono::milliseconds(1));
 				continue;
 			}
 
@@ -132,46 +136,50 @@ private:
 			{
 			case MsgType::MSG_INIT:
 			{
-				for (const auto ConCliInfo : m_ConnectedClientInfos)
-					SendMsg(ConCliInfo.first, Size, pStart);
+				for (const auto ConnCliInfo : m_ConnCliInfos)
+				{
+					if (SESSION_STATUS::DISCONN == ConnCliInfo.second->GetStatus()) continue;
+					ConnCliInfo.second->SendMsg(Size, pStart);
+					//SendMsg(ConnCliInfo.first, Size, pStart);
+				}
 
-				m_pPackPool->enqueue(pPack);
-
-				continue;
+				break;
 			}
 			case MsgType::MSG_GAME:
 			{
-				for (const auto ConCliInfo : m_ConnectedClientInfos)
+				for (const auto ConnCliInfo : m_ConnCliInfos)
 				{
-					if (0 == ConCliInfo.second->IsInited()) continue; // 이 if 문 어떻게 없앨 수 없을까?
-					if (pPack->GetSessionIdx() != ConCliInfo.first)
+					// TODO : IsInited() branch must be deleted for performance of game loop 
+					if (SESSION_STATUS::INITED != ConnCliInfo.second->GetStatus()) continue;
+					// TODO : this branch is gonna be deleted when server-authoritative model is implemented
+					if (pPack->GetSessionIdx() != ConnCliInfo.first)
 					{
-						SendMsg(ConCliInfo.first, Size, pStart);
+						ConnCliInfo.second->SendMsg(Size, pStart);
+						//SendMsg(ConnCliInfo.first, Size, pStart);
 					}
 				}
 
-				m_pPackPool->enqueue(pPack);
-
-				continue;
+				break;
 			}
 			case MsgType::MSG_CLOSE:
 			{
-				for (const auto ConCliInfo : m_ConnectedClientInfos)
+				for (const auto ConnCliInfo : m_ConnCliInfos)
 				{
-					if (0 == ConCliInfo.second->IsInited()) continue; // if IsInited is 0, also IsConnected is 0, so skip
-					SendMsg(ConCliInfo.first, Size, pStart);
+					if (SESSION_STATUS::INITED != ConnCliInfo.second->GetStatus()) continue;
+					ConnCliInfo.second->SendMsg(Size, pStart);
+					//SendMsg(ConnCliInfo.first, Size, pStart);
 				}
 
-				m_pPackPool->enqueue(pPack);
-
-				continue;
+				break;
 			}
 			default:
 			{
-				printf("[ProcPack] unknown msg type ERROR!!!");
+				assert(true);
 				break;
 			}
 			}
+
+			m_pPackPool->enqueue(pPack);
 		}
 	}
 

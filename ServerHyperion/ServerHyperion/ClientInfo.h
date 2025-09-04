@@ -6,6 +6,16 @@
 #include <mutex>
 
 
+enum SESSION_STATUS
+{
+	// more its number allocated to each enum, 
+	// more it is logically strong
+
+	DISCONN = 0,
+	CONN,
+	INITED,
+};
+ 
 //클라이언트 정보를 담기위한 구조체
 class stClientInfo
 {
@@ -13,6 +23,8 @@ public:
 	stClientInfo(atomic< shared_ptr<stOverlappedEx >>& _InOverlappedEx)
 		: m_OverlappedEx(_InOverlappedEx)
 	{
+		m_SessStatus.store(SESSION_STATUS::DISCONN);
+
 		ZeroMemory(&mRecvOverlappedEx, sizeof(stOverlappedEx));
 		m_Socket = INVALID_SOCKET;
 
@@ -23,6 +35,12 @@ public:
 		m_pSendBufQ = new StlCircularQueue<stOverlappedEx>(64);
 	}
 
+	virtual ~stClientInfo()
+	{
+		delete m_pSendBufQ;
+		delete m_pSendDataPool;
+	}
+
 	void Init(const UINT32 index, HANDLE iocpHandle_)
 	{
 		m_Index = index;
@@ -30,8 +48,7 @@ public:
 	}
 
 	inline UINT32 GetIndex() { return m_Index; }
-	inline bool IsConnected() { return m_IsConnected == 1; }
-	inline bool IsInited() { return m_IsInited == 1; }
+	inline SESSION_STATUS GetStatus() { return m_SessStatus.load(); }
 	inline SOCKET GetSock() { return m_Socket; }
 	inline UINT64 GetLatestClosedTimeSec() { return m_LatestClosedTimeSec; }
 	inline char* RecvBuffer() { return mRecvBuf; }
@@ -39,7 +56,7 @@ public:
 	bool OnConnect(HANDLE iocpHandle_, SOCKET socket_)
 	{
 		m_Socket = socket_;
-		m_IsConnected = 1;
+		m_SessStatus.exchange(SESSION_STATUS::CONN);
 
 		Clear();
 
@@ -68,8 +85,7 @@ public:
 		//소켓 옵션을 설정한다.
 		setsockopt(m_Socket, SOL_SOCKET, SO_LINGER, (char*)&stLinger, sizeof(stLinger));
 
-		m_IsConnected = 0;
-		m_IsInited = 0;
+		m_SessStatus.exchange(SESSION_STATUS::DISCONN);
 		m_LatestClosedTimeSec = chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now().time_since_epoch()).count();
 		//소켓 연결을 종료 시킨다.
 		closesocket(m_Socket);
@@ -228,7 +244,7 @@ public:
 		case MsgType::MSG_INIT:
 		{
 			printf("[SendCompleted()] MSG_INIT\n");
-			m_IsInited = 1; // set initialized
+			m_SessStatus.exchange(SESSION_STATUS::INITED); // set initialized
 
 			break;
 		}
@@ -237,6 +253,7 @@ public:
 			break;
 		}
 		default:
+			assert(true);
 			break;
 		}
 
@@ -250,7 +267,7 @@ public:
 		}
 		else
 		{
-			m_OverlappedEx.store(nullptr, memory_order_release);
+			m_OverlappedEx.exchange(nullptr, memory_order_release);
 		}
 	}
 
@@ -264,7 +281,7 @@ private:
 			1,
 			&dwRecvNumBytes,
 			0,
-			(LPWSAOVERLAPPED)_pInSendOverlappedEx.get(),
+			(LPWSAOVERLAPPED)_pInSendOverlappedEx.get(), // 구조체는 연속된 메모리 공간에 할당된다 -> 첫번째 멤버의 주소는 곧 그 구조체의 시작지점. 따라서 캐스팅 가능. ㅁㅊ...
 			NULL);
 
 		//socket_error이면 client socket이 끊어진걸로 처리한다.
@@ -306,8 +323,7 @@ private:
 	INT32 m_Index = 0;
 	HANDLE m_IOCPHandle = INVALID_HANDLE_VALUE;
 
-	INT64 m_IsConnected = 0;
-	atomic<INT64> m_IsInited = 0; // 0: not initialized, 1: initialized
+	atomic<SESSION_STATUS> m_SessStatus;
 
 	UINT64 m_LatestClosedTimeSec = 0;
 

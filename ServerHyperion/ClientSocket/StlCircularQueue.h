@@ -20,10 +20,11 @@ template<typename T>
 class StlCircularQueue
 {
 public:
-	StlCircularQueue(size_t buffer_size)
-		: buffer_mask_(buffer_size - 1)
+	StlCircularQueue(size_t _InBufSize)
+		: buffer_mask_(bit_ceil(_InBufSize) - 1)
 	{
-		assert((buffer_size >= 2) && ((buffer_size & (buffer_size - 1)) == 0));
+		//assert((buffer_size >= 2) && ((buffer_size & (buffer_size - 1)) == 0));
+		size_t BitBufSize = bit_ceil(_InBufSize);
 
 		/*
 		buffer_.reserve(buffer_size);
@@ -31,9 +32,9 @@ public:
 			buffer_.emplace_back();
 		*/
 		
-		buffer_ = new cell_t[buffer_size];
+		buffer_ = new cell_t[BitBufSize];
 
-		for (size_t i = 0; i != buffer_size; i += 1)
+		for (size_t i = 0; i != BitBufSize; i += 1)
 			buffer_[i].sequence_.store(i, memory_order_relaxed);
 
 		enqueue_pos_.store(0, memory_order_relaxed);
@@ -117,13 +118,15 @@ private:
 
 	//vector<cell_t>			buffer_;
 	cell_t*					buffer_;
+
+	const size_t            buffer_mask_;
+	
 	atomic<size_t>			enqueue_pos_;
 	atomic<size_t>			dequeue_pos_;
 
 	static const size_t     cacheline_size = 64;
 	typedef char            cacheline_pad_t[cacheline_size];
 	cacheline_pad_t         pad0_;
-	const size_t            buffer_mask_;
 	cacheline_pad_t         pad1_;
 	cacheline_pad_t         pad2_;
 	cacheline_pad_t         pad3_;
