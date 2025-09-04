@@ -30,7 +30,7 @@ public:
 
 		// send init packet to client
 
-		shared_ptr<Packet> pPack = nullptr;
+		unique_ptr<Packet> pPack = nullptr;
 		if (!m_pPackPool->dequeue(pPack))
 		{
 			printf("[OnConnect] : PackPool Error");
@@ -45,7 +45,7 @@ public:
 
 	virtual void OnClose(const UINT32 clientIndex_) override
 	{
-		shared_ptr<Packet> pPack = nullptr;
+		unique_ptr<Packet> pPack = nullptr;
 		if (!m_pPackPool->dequeue(pPack))
 		{
 			printf("[OnConnect] : PackPool Error");
@@ -62,7 +62,7 @@ public:
 
 	virtual void OnReceive(const UINT32 clientIndex_, const UINT32 size_, char* pData_) override
 	{
-		shared_ptr<Packet> pPack = nullptr;
+		unique_ptr<Packet> pPack = nullptr;
 		if (!m_pPackPool->dequeue(pPack))
 		{
 			printf("[OnReceive] : PackPool Error");
@@ -81,7 +81,7 @@ public:
 	{
 		m_pPackPool = new StlCircularQueue<Packet>(PUBLIC_PACK_POOL_SIZE);
 		for (int i = 0; i < PUBLIC_PACK_POOL_SIZE; ++i)
-			m_pPackPool->enqueue(make_shared<Packet>());
+			m_pPackPool->enqueue(make_unique<Packet>());
 
 		m_pPackQ = new StlCircularQueue< Packet >(PUBLIC_PACK_POOL_SIZE);
 
@@ -117,7 +117,7 @@ public:
 private:
 	void ProcPack()
 	{
-		shared_ptr<Packet> pPack = nullptr;
+		unique_ptr<Packet> pPack = nullptr;
 
 		char* pStart = nullptr;
 		UINT8 Size;

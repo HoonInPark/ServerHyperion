@@ -46,7 +46,7 @@ public:
 		delete[] buffer_;
 	}
 
-	bool enqueue(const shared_ptr<T>& data)
+	bool enqueue(const unique_ptr<T>& data)
 	{
 		cell_t* cell;
 		size_t pos = enqueue_pos_.load(memory_order_relaxed);
@@ -80,7 +80,7 @@ public:
 		return true;
 	}
 
-	bool dequeue(shared_ptr<T>& data)
+	bool dequeue(unique_ptr<T>& data)
 	{
 		cell_t* cell;
 		size_t pos = dequeue_pos_.load(memory_order_relaxed);
@@ -113,7 +113,7 @@ private:
 	struct cell_t
 	{
 		atomic<size_t>		sequence_;
-		shared_ptr<T>		data_;
+		unique_ptr<T>		data_;
 	};
 
 	//vector<cell_t>			buffer_;

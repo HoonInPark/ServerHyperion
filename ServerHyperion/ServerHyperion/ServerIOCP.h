@@ -154,7 +154,7 @@ public:
 private:
 	void CreateClient(const UINT32 maxClientCount)
 	{
-		m_SendBufArr = new atomic< shared_ptr<OverlappedEx >>[maxClientCount];
+		m_SendBufArr = new atomic< unique_ptr<OverlappedEx>>[maxClientCount];
 		for (UINT32 i = 0; i < maxClientCount; ++i)
 			m_SendBufArr[i].store(nullptr, memory_order_relaxed);
 
@@ -326,7 +326,7 @@ protected:
 	bool		m_bIsAccepterRun{ true };
 
 protected:
-	atomic< shared_ptr<OverlappedEx >>* m_SendBufArr;
+	atomic< unique_ptr<OverlappedEx>>* m_SendBufArr;
 
 	unordered_map<UINT32, CliInfo*> m_CliInfoPool;
 	unordered_map<UINT32, CliInfo*> m_ConnCliInfos;
