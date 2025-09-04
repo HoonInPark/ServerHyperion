@@ -17,10 +17,10 @@ enum SESSION_STATUS
 };
  
 //클라이언트 정보를 담기위한 구조체
-class ClientInfo
+class CliInfo
 {
 public:
-	ClientInfo(atomic< shared_ptr<OverlappedEx >>& _InOverlappedEx)
+	CliInfo(atomic< shared_ptr<OverlappedEx >>& _InOverlappedEx)
 		: m_OverlappedEx(_InOverlappedEx)
 	{
 		m_SessStatus.store(SESSION_STATUS::DISCONN);
@@ -35,7 +35,7 @@ public:
 		m_pSendBufQ = new StlCircularQueue<OverlappedEx>(64);
 	}
 
-	virtual ~ClientInfo()
+	virtual ~CliInfo()
 	{
 		delete m_pSendBufQ;
 		delete m_pSendDataPool;
@@ -94,6 +94,9 @@ public:
 
 	void Clear()
 	{
+		shared_ptr<OverlappedEx> pHangoverSendOverlappedEx = nullptr;
+		while (m_pSendBufQ->dequeue(pHangoverSendOverlappedEx))
+			m_pSendDataPool->enqueue(pHangoverSendOverlappedEx);
 	}
 
 	bool PostAccept(SOCKET listenSock_, const UINT64 curTimeSec_ = 0)
@@ -272,7 +275,7 @@ public:
 	}
 
 private:
-	bool SendIO(const shared_ptr<OverlappedEx>  _pInSendOverlappedEx)
+	bool SendIO(const shared_ptr<OverlappedEx> _pInSendOverlappedEx)
 	{
 		DWORD dwRecvNumBytes = 0;
 		int nRet = WSASend(

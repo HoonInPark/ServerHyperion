@@ -166,7 +166,7 @@ private:
 		
 		for (UINT32 i = 0; i < maxClientCount; ++i)
 		{
-			auto pCliInfo = make_shared<ClientInfo>(m_SendBufArr[i]);
+			auto pCliInfo = make_shared<CliInfo>(m_SendBufArr[i]);
 			pCliInfo->Init(i, m_IOCPHandle);
 			pCliInfo->PostAccept(m_ListenSocket);
 
@@ -192,7 +192,7 @@ private:
 	void WokerThread()
 	{
 		//CompletionKey를 받을 포인터 변수
-		shared_ptr<ClientInfo> pCliInfo = nullptr;
+		shared_ptr<CliInfo> pCliInfo = nullptr;
 		//함수 호출 성공 여부
 		BOOL bSuccess = TRUE;
 		//Overlapped I/O작업에서 전송된 데이터 크기
@@ -265,7 +265,7 @@ private:
 		}
 	}
 
-	void CloseSocket(shared_ptr<ClientInfo> _pInCliInfo, bool bIsForce = false)
+	void CloseSocket(shared_ptr<CliInfo> _pInCliInfo, bool bIsForce = false)
 	{
 		auto CliIdx = _pInCliInfo->GetIndex();
 
@@ -288,7 +288,7 @@ private:
 	}
 
 protected:
-	shared_ptr<ClientInfo> GetEmptyClientInfo(const UINT32 sessionIndex)
+	shared_ptr<CliInfo> GetEmptyClientInfo(const UINT32 sessionIndex)
 	{
 		auto it = m_CliInfoPool.find(sessionIndex);
 		if (it == m_CliInfoPool.end())
@@ -328,6 +328,6 @@ protected:
 protected:
 	atomic< shared_ptr<OverlappedEx >>* m_SendBufArr;
 
-	unordered_map<UINT32, shared_ptr<ClientInfo>> m_CliInfoPool;
-	unordered_map<UINT32, shared_ptr<ClientInfo>> m_ConnCliInfos;
+	unordered_map<UINT32, shared_ptr<CliInfo>> m_CliInfoPool;
+	unordered_map<UINT32, shared_ptr<CliInfo>> m_ConnCliInfos;
 };
