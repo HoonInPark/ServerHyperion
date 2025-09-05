@@ -89,7 +89,7 @@ public:
 		m_pPackQ = new StlCircularQueue< Packet >(PUBLIC_PACK_POOL_SIZE);
 
 		m_bIsRunProcThread = true;
-		mProcessThread = thread( // lambda bind here use onlu a thread
+		m_ProcThread = thread( // lambda bind here use onlu a thread
 			[this]()
 			{
 				ProcPack();
@@ -103,9 +103,9 @@ public:
 	{
 		m_bIsRunProcThread = false;
 
-		if (mProcessThread.joinable())
+		if (m_ProcThread.joinable())
 		{
-			mProcessThread.join();
+			m_ProcThread.join();
 		}
 
 		IOCPServer::CleanupThread();
@@ -183,11 +183,11 @@ private:
 		}
 	}
 
-	bool m_bIsRunProcThread = false;
+	bool						m_bIsRunProcThread = false;
 
-	thread mProcessThread;
+	thread						m_ProcThread;
 
-	StlCircularQueue<Packet>* m_pPackPool{ nullptr };
-	StlCircularQueue<Packet>* m_pPackQ{ nullptr };
+	StlCircularQueue<Packet>*	m_pPackPool{ nullptr };
+	StlCircularQueue<Packet>*	m_pPackQ{ nullptr };
 
 };
