@@ -1,5 +1,5 @@
-//출처: 강정중님의 저서 '온라인 게임서버'에서
 #pragma once
+
 #pragma comment(lib, "ws2_32")
 #pragma comment(lib, "mswsock.lib")
 
@@ -20,6 +20,8 @@ public:
 
 	virtual ~IOCPServer()
 	{
+		for (int i = 0; i < m_MaxCliCnt; ++i)
+			delete m_SendBufArr[i].load(memory_order_relaxed);
 		delete[] m_SendBufArr;
 
 		//윈속의 사용을 끝낸다.
@@ -152,11 +154,13 @@ public:
 	virtual void OnReceive(const UINT32 clientIndex_, const UINT32 size_, char* pData_) {}
 
 private:
-	void CreateClient(const UINT32 maxClientCount)
+	void CreateClient(const UINT32 MaxCliCnt)
 	{
-		m_SendBufArr = new atomic< unique_ptr<OverlappedEx>>[maxClientCount];
-		for (UINT32 i = 0; i < maxClientCount; ++i)
+		m_SendBufArr = new atomic<OverlappedEx*>[MaxCliCnt];
+		for (UINT32 i = 0; i < MaxCliCnt; ++i)
 			m_SendBufArr[i].store(nullptr, memory_order_relaxed);
+
+		m_MaxCliCnt = MaxCliCnt;
 
 		/*
 		m_SendBufVec.reserve(maxClientCount);
@@ -164,7 +168,7 @@ private:
 			m_SendBufVec.emplace_back(nullptr);
 		*/
 		
-		for (UINT32 i = 0; i < maxClientCount; ++i)
+		for (UINT32 i = 0; i < MaxCliCnt; ++i)
 		{
 			auto pCliInfo = new CliInfo(m_SendBufArr[i]);
 			pCliInfo->Init(i, m_IOCPHandle);
@@ -326,7 +330,8 @@ protected:
 	bool		m_bIsAccepterRun{ true };
 
 protected:
-	atomic< unique_ptr<OverlappedEx>>* m_SendBufArr;
+	UINT32 m_MaxCliCnt = 0;
+	atomic<OverlappedEx*>* m_SendBufArr;
 
 	unordered_map<UINT32, CliInfo*> m_CliInfoPool;
 	unordered_map<UINT32, CliInfo*> m_ConnCliInfos;

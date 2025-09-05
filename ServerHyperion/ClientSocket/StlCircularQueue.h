@@ -46,7 +46,7 @@ public:
 		delete[] buffer_;
 	}
 
-	bool enqueue(const unique_ptr<T>& data)
+	bool enqueue(unique_ptr<T>& data)
 	{
 		cell_t* cell;
 		size_t pos = enqueue_pos_.load(memory_order_relaxed);
@@ -74,7 +74,7 @@ public:
 				pos = enqueue_pos_.load(memory_order_relaxed);
 		}
 
-		cell->data_ = data;
+		cell->data_ = move(data);
 		cell->sequence_.store(pos + 1, memory_order_release);
 
 		return true;
@@ -102,7 +102,7 @@ public:
 				pos = dequeue_pos_.load(memory_order_relaxed);
 		}
 
-		data = cell->data_;
+		data = move(cell->data_);
 		cell->data_ = nullptr;
 		cell->sequence_.store(pos + buffer_mask_ + 1, memory_order_release);
 

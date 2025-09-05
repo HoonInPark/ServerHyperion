@@ -81,7 +81,10 @@ public:
 	{
 		m_pPackPool = new StlCircularQueue<Packet>(PUBLIC_PACK_POOL_SIZE);
 		for (int i = 0; i < PUBLIC_PACK_POOL_SIZE; ++i)
-			m_pPackPool->enqueue(make_unique<Packet>());
+		{
+			auto pPacket = make_unique<Packet>();
+			m_pPackPool->enqueue(pPacket);
+		}
 
 		m_pPackQ = new StlCircularQueue< Packet >(PUBLIC_PACK_POOL_SIZE);
 

@@ -20,17 +20,20 @@ enum SESSION_STATUS
 class CliInfo
 {
 public:
-	CliInfo(atomic< unique_ptr<OverlappedEx>>& _InOverlappedEx)
-		: m_OverlappedEx(_InOverlappedEx)
+	CliInfo(atomic<OverlappedEx*>& _InOvlpdEx)
+		: m_pAtomicOvlpdEx(_InOvlpdEx)
 	{
 		m_SessStatus.store(SESSION_STATUS::DISCONN);
 
-		ZeroMemory(&mRecvOverlappedEx, sizeof(OverlappedEx));
+		ZeroMemory(&m_RecvOvlpdEx, sizeof(OverlappedEx));
 		m_Socket = INVALID_SOCKET;
 
 		m_pSendDataPool = new StlCircularQueue<OverlappedEx>(64);
 		for (int i = 0; i < 64; ++i)
-			m_pSendDataPool->enqueue(make_unique<OverlappedEx>());
+		{
+			auto pSendData = make_unique<OverlappedEx>();
+			m_pSendDataPool->enqueue(pSendData);
+		}
 
 		m_pSendBufQ = new StlCircularQueue<OverlappedEx>(64);
 	}
@@ -51,7 +54,7 @@ public:
 	inline SESSION_STATUS GetStatus() { return m_SessStatus.load(); }
 	inline SOCKET GetSock() { return m_Socket; }
 	inline UINT64 GetLatestClosedTimeSec() { return m_LatestClosedTimeSec; }
-	inline char* RecvBuffer() { return mRecvBuf; }
+	inline char* RecvBuffer() { return m_RecvBuf; }
 
 	bool OnConnect(HANDLE iocpHandle_, SOCKET socket_)
 	{
@@ -94,9 +97,11 @@ public:
 
 	void Clear()
 	{
-		unique_ptr<OverlappedEx> pHangoverSendOverlappedEx = nullptr;
-		while (m_pSendBufQ->dequeue(pHangoverSendOverlappedEx))
-			m_pSendDataPool->enqueue(pHangoverSendOverlappedEx);
+		m_pAliveOvlpdEx = nullptr;
+
+		unique_ptr<OverlappedEx> pHangoverSendOvlpdEx = nullptr;
+		while (m_pSendBufQ->dequeue(pHangoverSendOvlpdEx))
+			m_pSendDataPool->enqueue(pHangoverSendOvlpdEx);
 	}
 
 	bool PostAccept(SOCKET listenSock_, const UINT64 curTimeSec_ = 0)
@@ -176,17 +181,17 @@ public:
 		DWORD dwRecvNumBytes = 0;
 
 		//Overlapped I/O을 위해 각 정보를 셋팅해 준다.
-		mRecvOverlappedEx.m_wsaBuf.len = MAX_SOCK_RECVBUF;
-		mRecvOverlappedEx.m_wsaBuf.buf = mRecvBuf;
-		mRecvOverlappedEx.m_eOperation = IOOperation::IO_RECV;
+		m_RecvOvlpdEx.m_wsaBuf.len = MAX_SOCK_RECVBUF;
+		m_RecvOvlpdEx.m_wsaBuf.buf = m_RecvBuf;
+		m_RecvOvlpdEx.m_eOperation = IOOperation::IO_RECV;
 
 		int nRet = WSARecv(
 			m_Socket,
-			&(mRecvOverlappedEx.m_wsaBuf),
+			&(m_RecvOvlpdEx.m_wsaBuf),
 			1,
 			&dwRecvNumBytes,
 			&dwFlag,
-			(LPWSAOVERLAPPED) & (mRecvOverlappedEx),
+			(LPWSAOVERLAPPED) & (m_RecvOvlpdEx),
 			NULL);
 
 		//socket_error이면 client socket이 끊어진걸로 처리한다.
@@ -203,26 +208,36 @@ public:
 	// obj pooling must be implemented
 	bool SendMsg(const UINT32 _InSize, char* _pInMsg)
 	{
-		unique_ptr<OverlappedEx> pSendOverlappedEx;
-		if (!m_pSendDataPool->dequeue(pSendOverlappedEx))
+		unique_ptr<OverlappedEx> pSendOvlpdEx;
+		if (!m_pSendDataPool->dequeue(pSendOvlpdEx))
 		{
-			printf("SendMsg Error in Client %d", m_Index);
+			printf("[SendMsg] : Error in Client %d", m_Index);
 			return false;
 		}
 
-		pSendOverlappedEx->Init();
-		pSendOverlappedEx->m_wsaBuf.len = _InSize;
-		CopyMemory(pSendOverlappedEx->m_wsaBuf.buf, _pInMsg, _InSize);
-		pSendOverlappedEx->m_eOperation = IOOperation::IO_SEND;
+		////////////////////////////////////////////////////////////////////////////////
+		/// write byte
+		////////////////////////////////////////////////////////////////////////////////
+		pSendOvlpdEx->Init();
+		pSendOvlpdEx->m_wsaBuf.len = _InSize;
+		CopyMemory(pSendOvlpdEx->m_wsaBuf.buf, _pInMsg, _InSize);
+		pSendOvlpdEx->m_eOperation = IOOperation::IO_SEND;
+		////////////////////////////////////////////////////////////////////////////////
+		////////////////////////////////////////////////////////////////////////////////
 
-		m_pSendBufQ->enqueue(pSendOverlappedEx);
-		if (nullptr == m_OverlappedEx.load(memory_order_relaxed))
+		m_pSendBufQ->enqueue(pSendOvlpdEx);
+		// If there are no messages currently in the process of being sent
+		if (nullptr == m_pAtomicOvlpdEx.load(memory_order_relaxed))
 		{
-			unique_ptr<OverlappedEx> pFirstSendOverlappedEx;
-			if (m_pSendBufQ->dequeue(pFirstSendOverlappedEx))
+			if (m_pSendBufQ->dequeue(m_pAliveOvlpdEx))
 			{
-				m_OverlappedEx.exchange(pFirstSendOverlappedEx.get(), memory_order_acq_rel);
-				SendIO(pFirstSendOverlappedEx);
+				m_pAtomicOvlpdEx.store(m_pAliveOvlpdEx.get(), memory_order_acquire);
+				SendIO(m_pAliveOvlpdEx);
+			}
+			else
+			{
+				printf("[SendMsg] : Error while dequeue from send buf q, data race is suspected");
+				return false;
 			}
 		}
 
@@ -233,9 +248,7 @@ public:
 	{
 		printf("[송신 완료] bytes : %d\n", dataSize_);
 
-		unique_ptr<OverlappedEx> pSendOverlappedEx = m_OverlappedEx.load(memory_order_relaxed);
-
-		char MsgTypeInBuff = pSendOverlappedEx->m_wsaBuf.buf[static_cast<int>(Packet::Header::MAX)];
+		char MsgTypeInBuff = m_pAliveOvlpdEx->m_wsaBuf.buf[static_cast<int>(Packet::Header::MAX)];
 		switch (static_cast<MsgType>(MsgTypeInBuff))
 		{
 		case MsgType::MSG_NONE:
@@ -260,17 +273,16 @@ public:
 			break;
 		}
 
-		m_pSendDataPool->enqueue(pSendOverlappedEx);
+		m_pSendDataPool->enqueue(m_pAliveOvlpdEx);
 
-		unique_ptr<OverlappedEx> pNextSendOverlappedEx;
-		if (m_pSendBufQ->dequeue(pNextSendOverlappedEx))
+		if (m_pSendBufQ->dequeue(m_pAliveOvlpdEx))
 		{
-			m_OverlappedEx.exchange(pNextSendOverlappedEx, memory_order_acq_rel);
-			SendIO(pNextSendOverlappedEx);
+			m_pAtomicOvlpdEx.exchange(m_pAliveOvlpdEx.get(), memory_order_acq_rel);
+			SendIO(m_pAliveOvlpdEx);
 		}
 		else
 		{
-			m_OverlappedEx.exchange(nullptr, memory_order_release);
+			m_pAtomicOvlpdEx.exchange(nullptr, memory_order_release);
 		}
 	}
 
@@ -323,22 +335,24 @@ private:
 	}
 
 private:
-	INT32 m_Index = 0;
-	HANDLE m_IOCPHandle = INVALID_HANDLE_VALUE;
+	INT32							m_Index = 0;
+	HANDLE							m_IOCPHandle = INVALID_HANDLE_VALUE;
 
-	atomic<SESSION_STATUS> m_SessStatus;
+	atomic<SESSION_STATUS>			m_SessStatus;
 
-	UINT64 m_LatestClosedTimeSec = 0;
+	UINT64							m_LatestClosedTimeSec = 0;
 
-	SOCKET			m_Socket;			//Cliet와 연결되는 소켓
+	SOCKET							m_Socket;			//Cliet와 연결되는 소켓
 
-	OverlappedEx	m_AcceptContext;
-	char m_AcceptBuf[64];
+	OverlappedEx					m_AcceptContext;
+	char							m_AcceptBuf[64];
 
-	OverlappedEx	mRecvOverlappedEx;	//IO_RECV Overlapped I/O작업을 위한 변수	
-	char			mRecvBuf[MAX_SOCK_RECVBUF]; //데이터 버퍼
+	OverlappedEx					m_RecvOvlpdEx;	//IO_RECV Overlapped I/O작업을 위한 변수	
+	char							m_RecvBuf[MAX_SOCK_RECVBUF]; //데이터 버퍼
 
-	atomic<OverlappedEx*>& m_OverlappedEx;
+	// m_AliveOvlpdEx always must be changed through m_AtomicOvlpdEx. 
+	unique_ptr<OverlappedEx>		m_pAliveOvlpdEx; // not to deleted when ref cnt go to zero
+	atomic<OverlappedEx*>&			m_pAtomicOvlpdEx;
 
 	StlCircularQueue<OverlappedEx>* m_pSendBufQ;
 	StlCircularQueue<OverlappedEx>* m_pSendDataPool;
