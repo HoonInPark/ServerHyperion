@@ -139,7 +139,7 @@ private:
 			{
 			case MsgType::MSG_INIT:
 			{
-				for (const auto ConnCliInfo : m_ConnCliInfos)
+				for (const auto& ConnCliInfo : m_ConnCliInfos)
 				{
 					if (SESSION_STATUS::DISCONN == ConnCliInfo.second->GetStatus()) continue;
 					ConnCliInfo.second->SendMsg(Size, pStart);
@@ -149,7 +149,7 @@ private:
 			}
 			case MsgType::MSG_GAME:
 			{
-				for (const auto ConnCliInfo : m_ConnCliInfos)
+				for (const auto& ConnCliInfo : m_ConnCliInfos)
 				{
 					// TODO : IsInited() branch must be deleted for performance of game loop 
 					if (SESSION_STATUS::INITED != ConnCliInfo.second->GetStatus()) continue;
@@ -164,7 +164,7 @@ private:
 			}
 			case MsgType::MSG_CLOSE:
 			{
-				for (const auto ConnCliInfo : m_ConnCliInfos)
+				for (const auto& ConnCliInfo : m_ConnCliInfos)
 				{
 					if (SESSION_STATUS::INITED != ConnCliInfo.second->GetStatus()) continue;
 					ConnCliInfo.second->SendMsg(Size, pStart);

@@ -97,7 +97,7 @@ public:
 
 	void Clear()
 	{
-		m_pInterOvlpdEx = nullptr;
+		m_pInternOvlpdEx = nullptr;
 
 		unique_ptr<OverlappedEx> pHangoverSendOvlpdEx = nullptr;
 		while (m_pSendBufQ->dequeue(pHangoverSendOvlpdEx))
@@ -229,10 +229,10 @@ public:
 		// If there are no messages currently in the process of being sent
 		if (nullptr == m_pAtomicOvlpdEx.load(memory_order_relaxed))
 		{
-			if (m_pSendBufQ->dequeue(m_pInterOvlpdEx))
+			if (m_pSendBufQ->dequeue(m_pInternOvlpdEx))
 			{
-				m_pAtomicOvlpdEx.store(m_pInterOvlpdEx.get(), memory_order_release);
-				SendIO(m_pInterOvlpdEx);
+				m_pAtomicOvlpdEx.store(m_pInternOvlpdEx.get(), memory_order_release);
+				SendIO(m_pInternOvlpdEx);
 			}
 			else
 			{
@@ -246,14 +246,14 @@ public:
 
 	void SendCompleted(const UINT32 dataSize_)
 	{
-		printf("[송신 완료] bytes : %d\n", dataSize_);
+		printf("[SendCompleted()] bytes : %d\n", dataSize_);
 
-		char MsgTypeInBuff = m_pInterOvlpdEx->m_wsaBuf.buf[static_cast<int>(Packet::Header::MAX)];
+		char MsgTypeInBuff = m_pInternOvlpdEx->m_wsaBuf.buf[static_cast<int>(Packet::Header::MAX)];
 		switch (static_cast<MsgType>(MsgTypeInBuff))
 		{
 		case MsgType::MSG_NONE:
 		{
-			printf("[SendCompleted] : Error\n");
+			printf("[SendCompleted()] : Error\n");
 
 			break;
 		}
@@ -273,16 +273,16 @@ public:
 			break;
 		}
 
-		m_pSendDataPool->enqueue(m_pInterOvlpdEx);
+		m_pSendDataPool->enqueue(m_pInternOvlpdEx);
 
-		if (m_pSendBufQ->dequeue(m_pInterOvlpdEx))
+		if (m_pSendBufQ->dequeue(m_pInternOvlpdEx))
 		{
-			m_pAtomicOvlpdEx.exchange(m_pInterOvlpdEx.get(), memory_order_acq_rel);
-			SendIO(m_pInterOvlpdEx);
+			m_pAtomicOvlpdEx.exchange(m_pInternOvlpdEx.get(), memory_order_acq_rel);
+			SendIO(m_pInternOvlpdEx);
 		}
 		else
 		{
-			m_pInterOvlpdEx = nullptr;
+			m_pInternOvlpdEx = nullptr;
 			m_pAtomicOvlpdEx.exchange(nullptr, memory_order_release);
 		}
 	}
@@ -352,7 +352,7 @@ private:
 	char							m_RecvBuf[MAX_SOCK_RECVBUF]; //데이터 버퍼
 
 	// m_AliveOvlpdEx always must be changed through m_AtomicOvlpdEx. 
-	unique_ptr<OverlappedEx>		m_pInterOvlpdEx; // not to deleted when ref cnt go to zero
+	unique_ptr<OverlappedEx>		m_pInternOvlpdEx; // not to deleted when ref cnt go to zero
 	atomic<OverlappedEx*>&			m_pAtomicOvlpdEx;
 
 	StlCircularQueue<OverlappedEx>* m_pSendBufQ;
