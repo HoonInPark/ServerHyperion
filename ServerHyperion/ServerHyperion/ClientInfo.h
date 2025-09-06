@@ -246,7 +246,7 @@ public:
 
 	void SendCompleted(const UINT32 dataSize_)
 	{
-		printf("[SendCompleted()] bytes : %d\n", dataSize_);
+		//printf("[SendCompleted()] bytes : %d\n", dataSize_);
 
 		char MsgTypeInBuff = m_pInternOvlpdEx->m_wsaBuf.buf[static_cast<int>(Packet::Header::MAX)];
 		switch (static_cast<MsgType>(MsgTypeInBuff))

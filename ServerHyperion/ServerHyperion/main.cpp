@@ -26,8 +26,8 @@ int main()
 	printf("아무 키나 누를 때까지 대기합니다\n");
 	while (true)
 	{
-		std::string inputCmd;
-		std::getline(std::cin, inputCmd);
+		string inputCmd;
+		getline(cin, inputCmd);
 
 		if (inputCmd == "quit")
 		{

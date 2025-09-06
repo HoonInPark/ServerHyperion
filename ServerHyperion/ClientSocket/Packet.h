@@ -66,7 +66,7 @@ public:
 
 		MAX
 	};
-		
+	
 	inline void SetMsgType(MsgType _InMsgType)
 	{
 		m_MsgType = _InMsgType;
