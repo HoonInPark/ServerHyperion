@@ -2,6 +2,7 @@
 
 #include <string>
 #include <fstream>
+#include <windows.h>
 #include <vector>
 
 using namespace std;
@@ -16,7 +17,7 @@ public:
 	PacketSampler();
 	~PacketSampler();
 
-	bool ReadFile(unsigned char** _pInData, int* _InLen);
+	bool ReadFile();
 	int WriteToFile();
 
 	void Sample(char* _pInChar, size_t _InSize);
@@ -25,7 +26,8 @@ private:
 	bool ModByteArr(char* _pInChar, size_t _InSize);
 
 private:
-	string m_FilePath;
+	string m_DataFilePath{ string() };
+	string m_MetaFilePath{ string() };
 
 	vector<char*>  m_Data;
 	vector<size_t> m_Meta;
@@ -43,9 +45,20 @@ PacketSampler::~PacketSampler()
 
 }
 
-inline bool PacketSampler::ReadFile(unsigned char** _pInData, int* _InLen)
+inline bool PacketSampler::ReadFile()
 {
-	ifstream Is(m_FilePath, ifstream::binary);
+	////////////////////////////////////////////////////////////////////////////////
+	// read meta data
+	////////////////////////////////////////////////////////////////////////////////
+	ifstream ifs(m_MetaFilePath, ios::binary);
+	size_t count;
+	ifs.read(reinterpret_cast<char*>(&count), sizeof(count));
+	ifs.read(reinterpret_cast<char*>(m_Meta.data()), count * sizeof(size_t));
+	////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////
+
+	ifstream Is(m_DataFilePath, ifstream::binary);
 	if (Is)
 	{
 		// seekg를 이용한 파일 크기 추출
@@ -54,13 +67,24 @@ inline bool PacketSampler::ReadFile(unsigned char** _pInData, int* _InLen)
 		Is.seekg(0, Is.beg);
 
 		// malloc으로 메모리 할당
-		unsigned char* pBuf = (unsigned char*)malloc(Len);
+		char* pData = (char*)malloc(Len);
 
 		// read data as a block:
-		Is.read((char*)pBuf, Len);
+		Is.read((char*)pData, Len);
 		Is.close();
-		*_pInData = pBuf;
-		*_InLen = Len;
+
+		m_Data.reserve(m_Meta.size());
+		// do something with pData
+		size_t CurDataFileIdx = 0;
+		for (size_t i = 0; i < m_Meta.size(); ++i)
+		{
+			char* pElem = new char[m_Meta[i]];
+			CopyMemory(pElem, pData + CurDataFileIdx, m_Meta[i]);
+
+			m_Data.push_back(pElem);
+
+			CurDataFileIdx += m_Meta[i];
+		}
 	}
 
 	return true;
@@ -68,27 +92,26 @@ inline bool PacketSampler::ReadFile(unsigned char** _pInData, int* _InLen)
 
 inline int PacketSampler::WriteToFile()
 {
-	char* pData;
-	
-	if (m_Data.size() != m_Meta.size()) return 1;
+	if (m_DataFilePath.empty() || m_MetaFilePath.empty()) return 1;
+	if (m_Data.size() != m_Meta.size()) return 2;
 
 	streamsize TotalLen = 0;
 	for (const auto PackLen : m_Meta)
 		TotalLen += PackLen;
 
-	pData = new char[TotalLen];
-	size_t CurBinIdx = 0;
+	char* pData = new char[TotalLen];
+	size_t CurDataFileIdx = 0;
 	for (size_t i = 0; i < m_Meta.size(); ++i)
 	{
 		for (size_t j = 0; j < m_Meta[i]; ++j)
 		{
-			pData[CurBinIdx] = m_Data[i][j];
-			CurBinIdx++;
+			pData[CurDataFileIdx] = m_Data[i][j];
+			CurDataFileIdx++;
 		}
 	}
-
+	
 	ofstream Fout;
-	Fout.open(m_FilePath, ios::out | ios::binary);
+	Fout.open(m_DataFilePath, ios::out | ios::binary);
 
 	if (Fout.is_open())
 	{
@@ -97,6 +120,17 @@ inline int PacketSampler::WriteToFile()
 	}
 
 	delete[] pData;
+
+	////////////////////////////////////////////////////////////////////////////////
+	// writh meta data
+	////////////////////////////////////////////////////////////////////////////////
+	std::ofstream ofs(m_MetaFilePath, ios::binary);
+	size_t count = m_Meta.size();
+	ofs.write(reinterpret_cast<const char*>(&count), sizeof(count));
+	ofs.write(reinterpret_cast<const char*>(m_Meta.data()), count * sizeof(size_t));
+	////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////
 
 	return 0;
 }
