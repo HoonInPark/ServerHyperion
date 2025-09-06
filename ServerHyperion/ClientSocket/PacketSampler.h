@@ -1,5 +1,13 @@
 #pragma once
 
+#define SERVERHYPERION_EXPORT
+
+#ifdef SERVERHYPERION_EXPORT
+#define SERVERHYPERION_API __declspec(dllexport)
+#else
+#define SERVERHYPERION_API __declspec(dllimport)
+#endif
+
 #include <string>
 #include <fstream>
 #include <windows.h>
@@ -29,12 +37,14 @@ public:
 private:
 	bool ModSessIdx(char* _pInChar, size_t _InSize);
 
+public:
+	vector<char*>  m_Data;
+	vector<size_t> m_Meta;
+
 private:
 	string m_DataFilePath{ SAMPLE_DATA_PATH };
 	string m_MetaFilePath{ SAMPLE_META_PATH };
 
-	vector<char*>  m_Data;
-	vector<size_t> m_Meta;
 
 };
 
@@ -57,6 +67,7 @@ inline bool PacketSampler::ReadFile()
 	ifstream ifs(m_MetaFilePath, ios::binary);
 	size_t count;
 	ifs.read(reinterpret_cast<char*>(&count), sizeof(count));
+	m_Meta.resize(count);
 	ifs.read(reinterpret_cast<char*>(m_Meta.data()), count * sizeof(size_t));
 	////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////
@@ -128,7 +139,7 @@ inline int PacketSampler::WriteToFile()
 	////////////////////////////////////////////////////////////////////////////////
 	// writh meta data
 	////////////////////////////////////////////////////////////////////////////////
-	std::ofstream ofs(m_MetaFilePath, ios::binary | ios::trunc); // ios::trunc : clear file when it is opened
+	ofstream ofs(m_MetaFilePath, ios::binary | ios::trunc); // ios::trunc : clear file when it is opened
 	size_t count = m_Meta.size();
 	ofs.write(reinterpret_cast<const char*>(&count), sizeof(count));
 	ofs.write(reinterpret_cast<const char*>(m_Meta.data()), count * sizeof(size_t));

@@ -59,10 +59,6 @@ public:
 
 		m_pPackQ->enqueue(pPack);
 
-#ifdef _DEBUG && GONNA_SAMPLE
-		m_pPackSampler->WriteToFile();
-#endif
-
 		printf("[OnClose] : Index(%d)\n", clientIndex_);
 	}
 
@@ -127,6 +123,10 @@ public:
 
 	virtual void End() override
 	{
+#ifdef _DEBUG && GONNA_SAMPLE
+		m_pPackSampler->WriteToFile();
+#endif
+
 		IOCPServer::End();
 		CleanupThread();
 	}

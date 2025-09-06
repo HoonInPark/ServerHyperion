@@ -139,7 +139,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ClientInfo.h" />
-    <ClInclude Include="PacketSampler.h" />
     <ClInclude Include="ServerHyperion.h" />
     <ClInclude Include="ServerIOCP.h" />
   </ItemGroup>
