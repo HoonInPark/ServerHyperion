@@ -2,6 +2,7 @@
 
 #include "ServerIOCP.h"
 #include "Packet.h"
+#include "PacketSampler.h"
 
 #include <vector>
 #include <thread>
@@ -9,6 +10,8 @@
 using namespace std;
 
 #define PUBLIC_PACK_POOL_SIZE 512
+#define GONNA_SAMPLE 1
+
 
 /// <summary>
 /// in ServerHyperion, we wrote game logics rather than low level network pocess...
@@ -29,7 +32,6 @@ public:
 		printf("[OnConnect] 클라이언트: Index(%d)\n", clientIndex_);
 
 		// send init packet to client
-
 		unique_ptr<Packet> pPack = nullptr;
 		if (!m_pPackPool->dequeue(pPack))
 		{
@@ -57,6 +59,10 @@ public:
 
 		m_pPackQ->enqueue(pPack);
 
+#ifdef _DEBUG && GONNA_SAMPLE
+		m_pPackSampler->WriteToFile();
+#endif
+
 		printf("[OnClose] : Index(%d)\n", clientIndex_);
 	}
 
@@ -72,6 +78,10 @@ public:
 		if (pPack->Read(pData_, size_))
 		{
 			//printf("[OnReceive] 클라이언트: Index(%d), dataSize(%d)\n", clientIndex_, size_);
+#ifdef _DEBUG && GONNA_SAMPLE
+			m_pPackSampler->Sample(pData_, size_);
+#endif
+
 			m_pPackQ->enqueue(pPack);
 		}
 		else printf("[OnReceive] Read Bin Data Failed");
@@ -79,6 +89,10 @@ public:
 
 	void Run(const UINT32 maxClient)
 	{
+#ifdef _DEBUG && GONNA_SAMPLE
+		m_pPackSampler = make_unique<PacketSampler>();
+#endif
+
 		m_pPackPool = new StlCircularQueue<Packet>(PUBLIC_PACK_POOL_SIZE);
 		for (int i = 0; i < PUBLIC_PACK_POOL_SIZE; ++i)
 		{
@@ -189,5 +203,9 @@ private:
 
 	StlCircularQueue<Packet>*	m_pPackPool{ nullptr };
 	StlCircularQueue<Packet>*	m_pPackQ{ nullptr };
+
+#ifdef _DEBUG && GONNA_SAMPLE
+	unique_ptr<PacketSampler> m_pPackSampler;
+#endif
 
 };

@@ -4,8 +4,12 @@
 #include <fstream>
 #include <windows.h>
 #include <vector>
+#include "Packet.h"
 
 using namespace std;
+
+constexpr const char* SAMPLE_DATA_PATH = "C:/Unreal/Projects/ServerHyperion/ServerHyperion/DummyClient/SampledPacket.spd";
+constexpr const char* SAMPLE_META_PATH = "C:/Unreal/Projects/ServerHyperion/ServerHyperion/DummyClient/SampledPacket.spm";
 
 /// <summary>
 /// it samples byte data from server while it is running 
@@ -23,11 +27,11 @@ public:
 	void Sample(char* _pInChar, size_t _InSize);
 
 private:
-	bool ModByteArr(char* _pInChar, size_t _InSize);
+	bool ModSessIdx(char* _pInChar, size_t _InSize);
 
 private:
-	string m_DataFilePath{ string() };
-	string m_MetaFilePath{ string() };
+	string m_DataFilePath{ SAMPLE_DATA_PATH };
+	string m_MetaFilePath{ SAMPLE_META_PATH };
 
 	vector<char*>  m_Data;
 	vector<size_t> m_Meta;
@@ -111,7 +115,7 @@ inline int PacketSampler::WriteToFile()
 	}
 	
 	ofstream Fout;
-	Fout.open(m_DataFilePath, ios::out | ios::binary);
+	Fout.open(m_DataFilePath, ios::out | ios::binary | ios::trunc);
 
 	if (Fout.is_open())
 	{
@@ -124,7 +128,7 @@ inline int PacketSampler::WriteToFile()
 	////////////////////////////////////////////////////////////////////////////////
 	// writh meta data
 	////////////////////////////////////////////////////////////////////////////////
-	std::ofstream ofs(m_MetaFilePath, ios::binary);
+	std::ofstream ofs(m_MetaFilePath, ios::binary | ios::trunc); // ios::trunc : clear file when it is opened
 	size_t count = m_Meta.size();
 	ofs.write(reinterpret_cast<const char*>(&count), sizeof(count));
 	ofs.write(reinterpret_cast<const char*>(m_Meta.data()), count * sizeof(size_t));
@@ -138,17 +142,13 @@ inline int PacketSampler::WriteToFile()
 inline void PacketSampler::Sample(char* _pInChar, size_t _InSize)
 {
 	char* pSampleBuf = new char[_InSize];
-
-	for (size_t i = 0; i < _InSize; ++i)
-		pSampleBuf[i] = _pInChar[i];	
-	
-	ModByteArr(pSampleBuf, _InSize);
+	CopyMemory(pSampleBuf, _pInChar, _InSize);
 
 	m_Data.push_back(pSampleBuf);
 	m_Meta.push_back(_InSize);
 }
 
-inline bool PacketSampler::ModByteArr(char* _pInChar, size_t _InSize)
+inline bool PacketSampler::ModSessIdx(char* _pInChar, size_t _InSize)
 {
 	// do something
 
