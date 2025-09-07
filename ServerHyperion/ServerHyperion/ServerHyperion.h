@@ -10,7 +10,7 @@
 using namespace std;
 
 #define PUBLIC_PACK_POOL_SIZE 512
-#define GONNA_SAMPLE 1
+#define GONNA_SAMPLE 0
 
 
 /// <summary>
@@ -74,7 +74,7 @@ public:
 		if (pPack->Read(pData_, size_))
 		{
 			//printf("[OnReceive] 클라이언트: Index(%d), dataSize(%d)\n", clientIndex_, size_);
-#ifdef _DEBUG && GONNA_SAMPLE
+#if _DEBUG && GONNA_SAMPLE
 			m_pPackSampler->Sample(pData_, size_);
 #endif
 
@@ -85,7 +85,8 @@ public:
 
 	void Run(const UINT32 maxClient)
 	{
-#ifdef _DEBUG && GONNA_SAMPLE
+#if _DEBUG && GONNA_SAMPLE
+		printf("[Run] WARING : Packet Sampler Initiated");
 		m_pPackSampler = make_unique<PacketSampler>();
 #endif
 
@@ -123,7 +124,7 @@ public:
 
 	virtual void End() override
 	{
-#ifdef _DEBUG && GONNA_SAMPLE
+#if _DEBUG && GONNA_SAMPLE
 		m_pPackSampler->WriteToFile();
 #endif
 
@@ -204,7 +205,7 @@ private:
 	StlCircularQueue<Packet>*	m_pPackPool{ nullptr };
 	StlCircularQueue<Packet>*	m_pPackQ{ nullptr };
 
-#ifdef _DEBUG && GONNA_SAMPLE
+#if _DEBUG && GONNA_SAMPLE
 	unique_ptr<PacketSampler> m_pPackSampler;
 #endif
 

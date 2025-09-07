@@ -21,99 +21,46 @@ public:
     Headless() : m_hIOCP(NULL), m_hSocket(INVALID_SOCKET) {}
     ~Headless() { Cleanup(); }
 
-    bool Init()
-    {
-        WSADATA wsaData;
-        if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
-        {
-            cerr << "WSAStartup failed\n";
-            return false;
-        }
-        return true;
-    }
-
-    bool Connect(const char* ip, int port)
+    bool Connect(const char* ip, int port) 
     {
         m_hSocket = socket(AF_INET, SOCK_STREAM, 0);
-        if (m_hSocket == INVALID_SOCKET)
-        {
-            cerr << "socket() failed\n";
-            return false;
-        }
+        if (m_hSocket == INVALID_SOCKET) return false;
 
-        SOCKADDR_IN addr;
+        SOCKADDR_IN addr{};
         addr.sin_family = AF_INET;
         addr.sin_port = htons(port);
+        if (InetPtonA(AF_INET, ip, &addr.sin_addr) <= 0) return false;
 
-        // ANSI 버전 사용 (ip는 const char* 이므로 변환 불필요)
-        if (InetPtonA(AF_INET, ip, &addr.sin_addr) <= 0) {
-            cerr << "InetPton failed for ip: " << ip << "\n";
-            return false;
-        }
+        if (connect(m_hSocket, (SOCKADDR*)&addr, sizeof(addr)) == SOCKET_ERROR) return false;
 
-        if (connect(m_hSocket, (SOCKADDR*)&addr, sizeof(addr)) == SOCKET_ERROR)
-        {
-            cerr << "connect() failed\n";
-            return false;
-        }
-
-        // IOCP 생성
-        m_hIOCP = CreateIoCompletionPort((HANDLE)m_hSocket, NULL, (ULONG_PTR)this, 0);
-        if (!m_hIOCP)
-        {
-            cerr << "CreateIoCompletionPort failed\n";
-            return false;
-        }
-
-        // 수신용 스레드 시작
         m_Worker = thread(&Headless::WorkerThread, this);
-
         return true;
     }
 
-    void SendLoop(PacketSampler& sampler)
+    void Send(const char* data, size_t len) 
     {
-        size_t idx = 0;
-        while (true)
-        {
-            if (idx >= sampler.m_Data.size()) idx = 0;
-
-            size_t len = sampler.m_Meta[idx];
-            char* buf  = sampler.m_Data[idx];
-
-            int ret = send(m_hSocket, buf, (int)len, 0);
-            if (ret == SOCKET_ERROR)
-            {
-                cerr << "send failed: " << WSAGetLastError() << "\n";
-                break;
-            }
-
-            // 30Hz → 33ms 간격
-            this_thread::sleep_for(chrono::milliseconds(33));
-            idx++;
+        int ret = send(m_hSocket, data, (int)len, 0);
+        if (ret == SOCKET_ERROR) {
+            cerr << "send() failed\n";
         }
     }
 
-    void WorkerThread()
+    void WorkerThread() 
     {
-        char buf[4096];
-        while (true)
+        char buf[1024];
+        while (true) 
         {
-            int ret = recv(m_hSocket, buf, sizeof(buf), 0);
-            if (ret > 0)
+            int recvLen = recv(m_hSocket, buf, sizeof(buf), 0);
+
+            //if ()
+
+            if (recvLen <= 0) 
             {
-                cout << "[Recv] size=" << ret << "\n";
+                break; // 연결 끊김
             }
-            else if (ret == 0)
-            {
-                cout << "Server closed connection\n";
-                break;
-            }
-            else
-            {
-                cerr << "recv error: " << WSAGetLastError() << "\n";
-                break;
-            }
+            // 서버 응답 처리 (원하면 로깅 가능)
+
+            this_thread::sleep_for(chrono::milliseconds(1));
         }
     }
 

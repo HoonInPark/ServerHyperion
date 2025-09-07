@@ -1,15 +1,20 @@
 ﻿#include <iostream>
 #include "Headless.h"
+#include "HeadlessManager.h"
 
 int main()
 {
+    WSADATA wsaData;
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
+    {
+        cerr << "WSAStartup failed\n";
+    }
+
     PacketSampler sampler;
-    sampler.ReadFile(); // 샘플 데이터 읽기
+    sampler.ReadFile();
 
-    Headless client;
-    if (!client.Init()) return 1;
-    if (!client.Connect(SERVER_IP, SERVER_PORT)) return 1;
+    HeadlessManager mgr("127.0.0.1", 11021, &sampler);
+    mgr.Run(2);  // 클라이언트 100개 띄워서 테스트
 
-    client.SendLoop(sampler); // 패킷 송신 루프
-    return 0;
+    WSACleanup();
 }
