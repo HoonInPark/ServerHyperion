@@ -41,6 +41,9 @@ void HeadlessManager::Run(int NumClients)
         return;
     }
 
+    Packet PackBuf;
+    char* CharBuf = nullptr;
+
     // 30fps 루프
     while (true) 
     {
@@ -48,11 +51,23 @@ void HeadlessManager::Run(int NumClients)
         {
             for (size_t j = 0; j < m_Clients.size(); ++j)
             {
-                Packet PackBuf;
-                PackBuf.Read(m_Sampler->m_Data[i], m_Sampler->m_Meta[i]);
-                //printf("%llu th : %d \n", (size_t)i, (char)PackBuf.GetSessionIdx());
+                m_Clients[j]->WaitIfNotInited();
 
-                m_Clients[j]->Send(m_Sampler->m_Data[i], m_Sampler->m_Meta[i]);
+                PackBuf.Read(m_Sampler->m_Data[i], m_Sampler->m_Meta[i]);
+
+                PackBuf.SetSessionIdx(m_Clients[j]->GetSessIdx());
+
+                // if it has x, y, z data in its body, 
+                //  u must re-assign its val
+                if (PackBuf.GetHeader()[2])
+                {
+                    PackBuf.SetPosX(PackBuf.GetPosX() + (70.0 * (int)(j / 10)));
+                    PackBuf.SetPosY(PackBuf.GetPosY() + (70.0 * (int)(j % 10)));
+                }
+
+                size_t PackLen = PackBuf.Write(CharBuf);
+                printf("Session Index : %d\n", m_Clients[j]->GetSessIdx());
+                m_Clients[j]->Send(CharBuf, PackLen);
             }
             
             this_thread::sleep_for(chrono::milliseconds(33)); // 약 30회/초

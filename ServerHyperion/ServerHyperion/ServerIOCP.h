@@ -3,13 +3,13 @@
 #pragma comment(lib, "ws2_32")
 #pragma comment(lib, "mswsock.lib")
 
-#include "ClientInfo.h"
-#include "Define.h"
 #include <thread>
 #include <vector>
 #include <memory>
 #include <unordered_set>
 #include <unordered_map>
+#include "ClientInfo.h"
+#include "Define.h"
 
 class IOCPServer
 {
@@ -69,7 +69,7 @@ public:
 
 		// 위에서 지정한 서버 주소 정보와 cIOCompletionPort 소켓을 연결한다. 
 		// cIOCompletionPort는 서버의 주소정보를 가지고 있는 소켓이다.
-		int nRet = bind(m_ListenSocket, (SOCKADDR*)&stServerAddr, sizeof(SOCKADDR_IN));
+		int nRet = ::bind(m_ListenSocket, (SOCKADDR*)&stServerAddr, sizeof(SOCKADDR_IN));
 		if (0 != nRet)
 		{
 			printf("[에러] bind()함수 실패 : %d\n", WSAGetLastError());

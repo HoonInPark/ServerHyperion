@@ -30,6 +30,7 @@ enum class MsgType
 	MSG_NONE = 0,
 
 	MSG_INIT,
+	MSG_SPAWN, 
 	MSG_GAME,
 	MSG_CLOSE,
 

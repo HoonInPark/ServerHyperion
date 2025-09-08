@@ -73,7 +73,7 @@ public:
 
 		if (pPack->Read(pData_, size_))
 		{
-			//printf("[OnReceive] 클라이언트: Index(%d), dataSize(%d)\n", clientIndex_, size_);
+			//printf("[OnReceive] CliIdx : %d,  X : %f, Y : %f, Z : %f \n", pPack->GetSessionIdx(), pPack->GetPosX(), pPack->GetPosY(), pPack->GetPosZ());
 #if _DEBUG && GONNA_SAMPLE
 			m_pPackSampler->Sample(pData_, size_);
 #endif
@@ -152,13 +152,51 @@ private:
 			
 			switch (pPack->GetMsgType())
 			{
+			case MsgType::MSG_NONE:
+			{
+				assert(true);
+				break;
+			}
 			case MsgType::MSG_INIT:
+			{
+				/*
+				for (const auto& ConnCliInfo : m_ConnCliInfos)
+				{
+					// we don't need this brnach 
+					// 'cause switch-case logic in io thread guarantees the member of ConnCliInfos map
+					//if (SESSION_STATUS::DISCONN == ConnCliInfo.second->GetStatus()) continue;
+					ConnCliInfo.second->SendMsg(Size, pStart);
+				}
+				*/
+
+				UINT32 SessIdx = pPack->GetSessionIdx();
+				m_ConnCliInfos[SessIdx]->SendMsg(Size, pStart);
+				m_ConnCliInfos[SessIdx]->BindSpawnMsg([this, SessIdx]()
+					{
+						unique_ptr<Packet> pPack = nullptr;
+						if (!m_pPackPool->dequeue(pPack))
+						{
+							printf("[SendCompleted()] : PackPool Error");
+							return;
+						}
+
+						pPack->SetMsgType(MsgType::MSG_SPAWN);
+						pPack->SetSessionIdx(SessIdx);
+
+						m_pPackQ->enqueue(pPack);
+					});
+
+				break;
+			}
+			case MsgType::MSG_SPAWN:
 			{
 				for (const auto& ConnCliInfo : m_ConnCliInfos)
 				{
-					if (SESSION_STATUS::DISCONN == ConnCliInfo.second->GetStatus()) continue;
+					if (SESSION_STATUS::ST_SPAWNED != ConnCliInfo.second->GetStatus()) continue;
 					ConnCliInfo.second->SendMsg(Size, pStart);
 				}
+
+				m_ConnCliInfos[pPack->GetSessionIdx()]->SetStatus(SESSION_STATUS::ST_SPAWNED);
 
 				break;
 			}
@@ -167,7 +205,7 @@ private:
 				for (const auto& ConnCliInfo : m_ConnCliInfos)
 				{
 					// TODO : IsInited() branch must be deleted for performance of game loop 
-					if (SESSION_STATUS::INITED != ConnCliInfo.second->GetStatus()) continue;
+					if (SESSION_STATUS::ST_SPAWNED != ConnCliInfo.second->GetStatus()) continue;
 					// TODO : this branch is gonna be deleted when server-authoritative model is implemented
 					if (pPack->GetSessionIdx() != ConnCliInfo.first)
 					{
@@ -181,7 +219,7 @@ private:
 			{
 				for (const auto& ConnCliInfo : m_ConnCliInfos)
 				{
-					if (SESSION_STATUS::INITED != ConnCliInfo.second->GetStatus()) continue;
+					if (SESSION_STATUS::ST_SPAWNED != ConnCliInfo.second->GetStatus()) continue;
 					ConnCliInfo.second->SendMsg(Size, pStart);
 				}
 

@@ -8,7 +8,11 @@
 #include <vector>
 #include <chrono>
 #include <WS2tcpip.h> 
+#include <condition_variable>
+
 #include "PacketSampler.h"
+#include "Packet.h"
+#include "Define.h"
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -37,10 +41,20 @@ public:
         return true;
     }
 
+    void WaitIfNotInited()
+    {
+        unique_lock<mutex> Lock(m_ConVarLock);
+        m_ConVar.wait(Lock, [this]
+            {
+                return m_SessIdx != 0xFFFFFFFF; // if false, it sleeps
+            });
+    }
+
     void Send(const char* data, size_t len) 
     {
         int ret = send(m_hSocket, data, (int)len, 0);
-        if (ret == SOCKET_ERROR) {
+        if (ret == SOCKET_ERROR) 
+        {
             cerr << "send() failed\n";
         }
     }
@@ -48,11 +62,23 @@ public:
     void WorkerThread() 
     {
         char buf[1024];
+        Packet Pack;
+
         while (true) 
         {
             int recvLen = recv(m_hSocket, buf, sizeof(buf), 0);
+            Pack.Read(buf, recvLen);
 
-            //if ()
+            if (MsgType::MSG_INIT == Pack.GetMsgType())
+            {
+                if (0xFFFFFFFF == m_SessIdx)
+                {
+                    m_SessIdx = Pack.GetSessionIdx();
+
+                    unique_lock<mutex> Lock(m_ConVarLock);
+                    m_ConVar.notify_all();
+                }
+            }
 
             if (recvLen <= 0) 
             {
@@ -72,11 +98,17 @@ public:
             m_hSocket = INVALID_SOCKET;
         }
         if (m_Worker.joinable()) m_Worker.join();
-        WSACleanup();
     }
 
+    inline UINT32 GetSessIdx() { return m_SessIdx; }
+
 private:
-    HANDLE m_hIOCP;
-    SOCKET m_hSocket;
-    thread m_Worker;
+    condition_variable  m_ConVar;
+    mutex               m_ConVarLock;
+
+    UINT32              m_SessIdx{ 0xFFFFFFFF };
+
+    HANDLE              m_hIOCP;
+    SOCKET              m_hSocket;
+    thread              m_Worker;
 };

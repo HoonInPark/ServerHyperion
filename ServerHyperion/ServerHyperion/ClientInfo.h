@@ -4,6 +4,7 @@
 #include "StlCircularQueue.h"
 #include <stdio.h>
 #include <mutex>
+#include <functional>
 
 
 enum SESSION_STATUS
@@ -11,9 +12,10 @@ enum SESSION_STATUS
 	// more its number allocated to each enum, 
 	// more it is logically strong
 
-	DISCONN = 0,
-	CONN,
-	INITED,
+	ST_DISCONN = 0,
+	ST_CONN,
+	ST_INITED,
+	ST_SPAWNED,
 };
  
 //클라이언트 정보를 담기위한 구조체
@@ -23,7 +25,7 @@ public:
 	CliInfo(atomic<OverlappedEx*>& _InOvlpdEx)
 		: m_pAtomicOvlpdEx(_InOvlpdEx)
 	{
-		m_SessStatus.store(SESSION_STATUS::DISCONN);
+		m_SessStatus.store(SESSION_STATUS::ST_DISCONN);
 
 		ZeroMemory(&m_RecvOvlpdEx, sizeof(OverlappedEx));
 		m_Socket = INVALID_SOCKET;
@@ -50,16 +52,19 @@ public:
 		m_IOCPHandle = iocpHandle_;
 	}
 
-	inline UINT32 GetIndex() { return m_Index; }
-	inline SESSION_STATUS GetStatus() { return m_SessStatus.load(); }
-	inline SOCKET GetSock() { return m_Socket; }
-	inline UINT64 GetLatestClosedTimeSec() { return m_LatestClosedTimeSec; }
-	inline char* RecvBuffer() { return m_RecvBuf; }
+	inline UINT32 GetIndex()						{ return m_Index; }
+	
+	inline SESSION_STATUS GetStatus()				{ return m_SessStatus.load(); }
+	inline void SetStatus(SESSION_STATUS _InStatus)	{ m_SessStatus.exchange(_InStatus); }
+	
+	inline SOCKET GetSock()							{ return m_Socket; }
+	inline UINT64 GetLatestClosedTimeSec()			{ return m_LatestClosedTimeSec; }
+	inline char* RecvBuffer()						{ return m_RecvBuf; }
 
 	bool OnConnect(HANDLE iocpHandle_, SOCKET socket_)
 	{
 		m_Socket = socket_;
-		m_SessStatus.exchange(SESSION_STATUS::CONN);
+		m_SessStatus.exchange(SESSION_STATUS::ST_CONN);
 
 		Clear();
 
@@ -88,7 +93,7 @@ public:
 		//소켓 옵션을 설정한다.
 		setsockopt(m_Socket, SOL_SOCKET, SO_LINGER, (char*)&stLinger, sizeof(stLinger));
 
-		m_SessStatus.exchange(SESSION_STATUS::DISCONN);
+		m_SessStatus.exchange(SESSION_STATUS::ST_DISCONN);
 		m_LatestClosedTimeSec = chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now().time_since_epoch()).count();
 		//소켓 연결을 종료 시킨다.
 		closesocket(m_Socket);
@@ -204,6 +209,11 @@ public:
 		return true;
 	}
 
+	void BindSpawnMsg(function<void()> _InFuncSendSpawn)
+	{
+		m_SendSpawnMsg = _InFuncSendSpawn;
+	}
+
 	// 1개의 스레드에서만 호출해야 한다! 
 	// obj pooling must be implemented
 	bool SendMsg(const UINT32 _InSize, char* _pInMsg)
@@ -211,7 +221,7 @@ public:
 		unique_ptr<OverlappedEx> pSendOvlpdEx;
 		if (!m_pSendDataPool->dequeue(pSendOvlpdEx))
 		{
-			printf("[SendMsg] : Error in Client %d", m_Index);
+			printf("[SendMsg] : Error in Client %d\n", m_Index);
 			return false;
 		}
 
@@ -255,13 +265,25 @@ public:
 		case MsgType::MSG_NONE:
 		{
 			printf("[SendCompleted()] : Error\n");
-
 			break;
 		}
 		case MsgType::MSG_INIT:
 		{
-			printf("[SendCompleted()] MSG_INIT\n");
-			m_SessStatus.exchange(SESSION_STATUS::INITED); // set initialized
+			//printf("[SendCompleted()] MSG_INIT\n");
+			m_SessStatus.exchange(SESSION_STATUS::ST_INITED); // set initialized
+			
+			if (m_SendSpawnMsg)
+			{
+				m_SendSpawnMsg();
+				m_SendSpawnMsg = nullptr;
+			}
+			else
+				printf("[SendCompleted()] : Callback Failed after Inited");
+
+			break;
+		}
+		case MsgType::MSG_SPAWN:
+		{
 
 			break;
 		}
@@ -341,6 +363,8 @@ private:
 	HANDLE							m_IOCPHandle = INVALID_HANDLE_VALUE;
 
 	atomic<SESSION_STATUS>			m_SessStatus;
+	function<void()>				m_SendSpawnMsg{ nullptr };
+	function<void()>				m_SendSpawnCompleted{ nullptr };
 
 	UINT64							m_LatestClosedTimeSec = 0;
 
