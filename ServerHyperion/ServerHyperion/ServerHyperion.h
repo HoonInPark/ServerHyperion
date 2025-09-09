@@ -177,7 +177,6 @@ private:
 				*/
 
 				UINT32 SessIdx = pPack->GetSessionIdx();
-				m_ConnCliInfos[SessIdx]->SendMsg(Size, pStart);
 				m_ConnCliInfos[SessIdx]->BindSpawnMsg([this, SessIdx]()
 					{
 						unique_ptr<Packet> pPack = nullptr;
@@ -192,6 +191,7 @@ private:
 
 						m_pPackQ->enqueue(pPack);
 					});
+				m_ConnCliInfos[SessIdx]->SendMsg(Size, pStart);
 
 				break;
 			}

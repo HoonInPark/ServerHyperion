@@ -203,7 +203,7 @@ public:
 		//socket_error이면 client socket이 끊어진걸로 처리한다.
 		if (nRet == SOCKET_ERROR && (WSAGetLastError() != ERROR_IO_PENDING))
 		{
-			printf("[에러] WSARecv()함수 실패 : %d\n", WSAGetLastError());
+			printf("[BindRecv()] WSARecv() func failed : %d\n", WSAGetLastError());
 			return false;
 		}
 
@@ -279,7 +279,9 @@ public:
 				m_SendSpawnMsg = nullptr;
 			}
 			else
-				printf("[SendCompleted()] : Callback Failed after Inited\n");
+			{
+				printf("[SendCompleted()] : Callback Failed after Inited \n");
+			}
 
 			break;
 		}
@@ -327,7 +329,7 @@ private:
 		//socket_error이면 client socket이 끊어진걸로 처리한다.
 		if (nRet == SOCKET_ERROR && (WSAGetLastError() != ERROR_IO_PENDING))
 		{
-			printf("[에러] WSASend()함수 실패 : %d\n", WSAGetLastError());
+			printf("[SendIO()] WSASend() func failed : %d\n", WSAGetLastError());
 			return false;
 		}
 
