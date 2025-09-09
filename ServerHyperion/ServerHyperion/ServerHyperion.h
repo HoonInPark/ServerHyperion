@@ -90,6 +90,7 @@ public:
 		m_pPackSampler = make_unique<PacketSampler>();
 #endif
 
+		m_pPackQ = new StlCircularQueue<Packet>(PUBLIC_PACK_POOL_SIZE);
 		m_pPackPool = new StlCircularQueue<Packet>(PUBLIC_PACK_POOL_SIZE);
 		for (int i = 0; i < PUBLIC_PACK_POOL_SIZE; ++i)
 		{
@@ -97,7 +98,13 @@ public:
 			m_pPackPool->enqueue(pPacket);
 		}
 
-		m_pPackQ = new StlCircularQueue< Packet >(PUBLIC_PACK_POOL_SIZE);
+		m_pSafeEraseQ = new StlCircularQueue<UINT32>(maxClient);
+		m_pSafeErasePool = new StlCircularQueue<UINT32>(maxClient);
+		for (int i = 0; i < maxClient; ++i)
+		{
+			auto pSessIdx = make_unique<UINT32>(0);
+			m_pSafeErasePool->enqueue(pSessIdx);
+		}
 
 		m_bIsRunProcThread = true;
 		m_ProcThread = thread( // lambda bind here use onlu a thread
@@ -206,7 +213,6 @@ private:
 			{
 				for (const auto& ConnCliInfo : m_ConnCliInfos)
 				{
-					// TODO : IsInited() branch must be deleted for performance of game loop 
 					if (SESSION_STATUS::ST_SPAWNED != ConnCliInfo.second->GetStatus()) continue;
 					// TODO : this branch is gonna be deleted when server-authoritative model is implemented
 					if (pPack->GetSessionIdx() != ConnCliInfo.first)
@@ -232,6 +238,16 @@ private:
 				assert(true);
 				break;
 			}
+			}
+
+			unique_ptr<UINT32> pSafeEraseElem;
+			while (m_pSafeEraseQ->dequeue(pSafeEraseElem))
+			{
+				auto it = m_ConnCliInfos.find(*pSafeEraseElem);
+				if (it != m_ConnCliInfos.end())
+					m_ConnCliInfos.erase(*pSafeEraseElem);
+
+				m_pSafeErasePool->enqueue(pSafeEraseElem);
 			}
 
 			m_pPackPool->enqueue(pPack);

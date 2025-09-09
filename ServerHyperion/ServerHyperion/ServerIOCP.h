@@ -273,8 +273,9 @@ private:
 	{
 		auto CliIdx = _pInCliInfo->GetIndex();
 
-		m_ConnCliInfos.erase(CliIdx);
-		
+		//m_ConnCliInfos.erase(CliIdx);
+		SafeErase(CliIdx);
+
 		_pInCliInfo->Close(bIsForce);
 		OnClose(CliIdx);
 
@@ -292,6 +293,14 @@ private:
 	}
 
 protected:
+	void SafeErase(const UINT32 _InCliIdx)
+	{
+		unique_ptr<UINT32> pSafeEraseElem;
+		m_pSafeErasePool->dequeue(pSafeEraseElem);
+		*pSafeEraseElem = _InCliIdx;
+		m_pSafeEraseQ->enqueue(pSafeEraseElem);
+	}
+
 	CliInfo* GetEmptyClientInfo(const UINT32 sessionIndex)
 	{
 		auto it = m_CliInfoPool.find(sessionIndex);
@@ -335,4 +344,8 @@ protected:
 
 	unordered_map<UINT32, CliInfo*> m_CliInfoPool;
 	unordered_map<UINT32, CliInfo*> m_ConnCliInfos;
+
+	StlCircularQueue<UINT32>* m_pSafeErasePool{ nullptr };
+	StlCircularQueue<UINT32>* m_pSafeEraseQ{ nullptr };
+
 };
