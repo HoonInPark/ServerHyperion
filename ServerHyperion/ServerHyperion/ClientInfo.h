@@ -212,6 +212,7 @@ public:
 
 	void BindSpawnMsg(function<void()> _InFuncSendSpawn)
 	{
+		assert(_InFuncSendSpawn);
 		m_SendSpawnMsg = _InFuncSendSpawn;
 	}
 

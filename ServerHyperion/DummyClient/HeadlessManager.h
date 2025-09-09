@@ -43,7 +43,7 @@ void HeadlessManager::Run(int NumClients)
 
     Packet PackBuf;
     char* CharBuf = nullptr;
-
+    unsigned long long LoopCnt = 0;
     // 30fps 루프
     while (true) 
     {
@@ -73,4 +73,7 @@ void HeadlessManager::Run(int NumClients)
             this_thread::sleep_for(chrono::milliseconds(33)); // 약 30회/초
         }
     }
+
+    printf("%llu th loop \n", LoopCnt);
+    LoopCnt++;
 }
