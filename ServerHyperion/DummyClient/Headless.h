@@ -97,7 +97,9 @@ public:
             closesocket(m_hSocket);
             m_hSocket = INVALID_SOCKET;
         }
-        if (m_Worker.joinable()) m_Worker.join();
+
+        if (m_Worker.joinable()) 
+            m_Worker.join();
     }
 
     inline UINT32 GetSessIdx() { return m_SessIdx; }

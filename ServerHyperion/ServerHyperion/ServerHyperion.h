@@ -9,7 +9,7 @@
 
 using namespace std;
 
-#define PUBLIC_PACK_POOL_SIZE 512
+#define PUBLIC_PACK_POOL_SIZE 2048
 #define GONNA_SAMPLE 0
 
 
@@ -67,7 +67,7 @@ public:
 		unique_ptr<Packet> pPack = nullptr;
 		if (!m_pPackPool->dequeue(pPack))
 		{
-			printf("[OnReceive] : PackPool Error");
+			printf("[OnReceive] : PackPool Error\n");
 			return;
 		}
 
@@ -196,6 +196,8 @@ private:
 					ConnCliInfo.second->SendMsg(Size, pStart);
 				}
 
+				// TODO : 반드시! 모든 세션들이 스폰 메시지를 전송완료했다는 신호를 받은 뒤 아래 동작을 하도록 변경돼야 한다. 
+				// TODO : 그러러면 전체적인 구조의 수정이 불가피.
 				m_ConnCliInfos[pPack->GetSessionIdx()]->SetStatus(SESSION_STATUS::ST_SPAWNED);
 
 				break;

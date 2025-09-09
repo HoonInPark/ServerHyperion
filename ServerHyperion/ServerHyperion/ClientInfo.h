@@ -6,6 +6,7 @@
 #include <mutex>
 #include <functional>
 
+#define CLI_PACK_POOL_SIZE 256
 
 enum SESSION_STATUS
 {
@@ -30,14 +31,14 @@ public:
 		ZeroMemory(&m_RecvOvlpdEx, sizeof(OverlappedEx));
 		m_Socket = INVALID_SOCKET;
 
-		m_pSendDataPool = new StlCircularQueue<OverlappedEx>(64);
-		for (int i = 0; i < 64; ++i)
+		m_pSendDataPool = new StlCircularQueue<OverlappedEx>(CLI_PACK_POOL_SIZE);
+		for (int i = 0; i < CLI_PACK_POOL_SIZE; ++i)
 		{
 			auto pSendData = make_unique<OverlappedEx>();
 			m_pSendDataPool->enqueue(pSendData);
 		}
 
-		m_pSendBufQ = new StlCircularQueue<OverlappedEx>(64);
+		m_pSendBufQ = new StlCircularQueue<OverlappedEx>(CLI_PACK_POOL_SIZE);
 	}
 
 	virtual ~CliInfo()
@@ -278,7 +279,7 @@ public:
 				m_SendSpawnMsg = nullptr;
 			}
 			else
-				printf("[SendCompleted()] : Callback Failed after Inited");
+				printf("[SendCompleted()] : Callback Failed after Inited\n");
 
 			break;
 		}

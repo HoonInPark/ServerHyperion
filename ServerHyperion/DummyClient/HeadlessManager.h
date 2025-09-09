@@ -66,7 +66,7 @@ void HeadlessManager::Run(int NumClients)
                 }
 
                 size_t PackLen = PackBuf.Write(CharBuf);
-                printf("Session Index : %d\n", m_Clients[j]->GetSessIdx());
+                //printf("Session Index : %d\n", m_Clients[j]->GetSessIdx());
                 m_Clients[j]->Send(CharBuf, PackLen);
             }
             
