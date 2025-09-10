@@ -179,8 +179,8 @@ private:
 				}
 				*/
 
-				UINT32 SessIdx = pPack->GetSessionIdx();
-				m_ConnCliInfos[SessIdx]->BindSpawnMsg([this, SessIdx]()
+				UINT32 SessIdx = pPack->GetSessIdx();
+				m_CliInfoPool[SessIdx]->BindSpawnMsg([this, SessIdx]()
 					{
 						unique_ptr<Packet> pPack = nullptr;
 						if (!m_pPackPool->dequeue(pPack))
@@ -194,31 +194,37 @@ private:
 
 						m_pPackQ->enqueue(pPack);
 					});
-				m_ConnCliInfos[SessIdx]->SendMsg(Size, pStart);
+
+				m_CliInfoPool[SessIdx]->SendMsg(Size, pStart);
 
 				break;
 			}
 			case MsgType::MSG_SPAWN:
 			{
-				for (const auto& ConnCliInfo : m_ConnCliInfos)
+				for (const auto& ConnCliInfo : m_SpawnedCliInfos)
 				{
-					if (SESSION_STATUS::ST_SPAWNED != ConnCliInfo.second->GetStatus()) continue;
+					//if (SESSION_STATUS::ST_SPAWNED != ConnCliInfo.second->GetStatus()) continue;
 					ConnCliInfo.second->SendMsg(Size, pStart);
 				}
 
 				// TODO : 반드시! 모든 세션들이 스폰 메시지를 전송완료했다는 신호를 받은 뒤 아래 동작을 하도록 변경돼야 한다. 
 				// TODO : 그러러면 전체적인 구조의 수정이 불가피.
-				m_ConnCliInfos[pPack->GetSessionIdx()]->SetStatus(SESSION_STATUS::ST_SPAWNED);
+				m_CliInfoPool[pPack->GetSessIdx()]->SetStatus(SESSION_STATUS::ST_SPAWNED);
+
+				auto pCliInfo = GetCliInfoFromPool(pPack->GetSessIdx());
+
+				m_CliInfoPool.erase(pPack->GetSessIdx());
+				m_SpawnedCliInfos.emplace(pPack->GetSessIdx(), pCliInfo);
 
 				break;
 			}
 			case MsgType::MSG_GAME:
 			{
-				for (const auto& ConnCliInfo : m_ConnCliInfos)
+				for (const auto& ConnCliInfo : m_SpawnedCliInfos)
 				{
-					if (SESSION_STATUS::ST_SPAWNED != ConnCliInfo.second->GetStatus()) continue;
+					//if (SESSION_STATUS::ST_SPAWNED != ConnCliInfo.second->GetStatus()) continue;
 					// TODO : this branch is gonna be deleted when server-authoritative model is implemented
-					if (pPack->GetSessionIdx() != ConnCliInfo.first)
+					if (pPack->GetSessIdx() != ConnCliInfo.first)
 					{
 						ConnCliInfo.second->SendMsg(Size, pStart);
 					}
@@ -228,7 +234,7 @@ private:
 			}
 			case MsgType::MSG_CLOSE:
 			{
-				for (const auto& ConnCliInfo : m_ConnCliInfos)
+				for (const auto& ConnCliInfo : m_SpawnedCliInfos)
 				{
 					if (SESSION_STATUS::ST_SPAWNED != ConnCliInfo.second->GetStatus()) continue;
 					ConnCliInfo.second->SendMsg(Size, pStart);
@@ -246,9 +252,9 @@ private:
 			unique_ptr<UINT32> pSafeEraseElem;
 			while (m_pSafeEraseQ->dequeue(pSafeEraseElem))
 			{
-				auto it = m_ConnCliInfos.find(*pSafeEraseElem);
-				if (it != m_ConnCliInfos.end())
-					m_ConnCliInfos.erase(*pSafeEraseElem);
+				auto it = m_SpawnedCliInfos.find(*pSafeEraseElem);
+				if (it != m_SpawnedCliInfos.end())
+					m_SpawnedCliInfos.erase(*pSafeEraseElem);
 
 				m_pSafeErasePool->enqueue(pSafeEraseElem);
 			}

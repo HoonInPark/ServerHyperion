@@ -239,10 +239,7 @@ private:
 			{
 			case IOOperation::IO_ACCEPT:
 			{
-				pCliInfo = GetEmptyClientInfo(pOverlappedEx->SessionIndex);
-
-				m_CliInfoPool.erase(pCliInfo->GetIndex());
-				m_ConnCliInfos.emplace(pCliInfo->GetIndex(), pCliInfo);
+				pCliInfo = GetCliInfoFromPool(pOverlappedEx->SessionIndex);
 
 				if (pCliInfo->AcceptCompletion())
 					OnConnect(pCliInfo->GetIndex());
@@ -301,7 +298,7 @@ protected:
 		m_pSafeEraseQ->enqueue(pSafeEraseElem);
 	}
 
-	CliInfo* GetEmptyClientInfo(const UINT32 sessionIndex)
+	CliInfo* GetCliInfoFromPool(const UINT32 sessionIndex)
 	{
 		auto it = m_CliInfoPool.find(sessionIndex);
 		if (it == m_CliInfoPool.end())
@@ -343,7 +340,7 @@ protected:
 	atomic<OverlappedEx*>* m_SendBufArr;
 
 	unordered_map<UINT32, CliInfo*> m_CliInfoPool;
-	unordered_map<UINT32, CliInfo*> m_ConnCliInfos;
+	unordered_map<UINT32, CliInfo*> m_SpawnedCliInfos;
 
 	StlCircularQueue<UINT32>* m_pSafeErasePool{ nullptr };
 	StlCircularQueue<UINT32>* m_pSafeEraseQ{ nullptr };

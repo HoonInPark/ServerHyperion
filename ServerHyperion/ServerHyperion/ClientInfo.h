@@ -64,10 +64,10 @@ public:
 
 	bool OnConnect(HANDLE iocpHandle_, SOCKET socket_)
 	{
+		Clear();
+
 		m_Socket = socket_;
 		m_SessStatus.exchange(SESSION_STATUS::ST_CONN);
-
-		Clear();
 
 		//I/O Completion Port객체와 소켓을 연결시킨다.
 		if (BindIOCompletionPort(iocpHandle_) == false)
@@ -104,6 +104,7 @@ public:
 	void Clear()
 	{
 		m_pInternOvlpdEx = nullptr;
+		m_pAtomicOvlpdEx.store(nullptr);
 
 		unique_ptr<OverlappedEx> pHangoverSendOvlpdEx = nullptr;
 		while (m_pSendBufQ->dequeue(pHangoverSendOvlpdEx))
@@ -368,7 +369,6 @@ private:
 
 	atomic<SESSION_STATUS>			m_SessStatus;
 	function<void()>				m_SendSpawnMsg{ nullptr };
-	function<void()>				m_SendSpawnCompleted{ nullptr };
 
 	UINT64							m_LatestClosedTimeSec = 0;
 

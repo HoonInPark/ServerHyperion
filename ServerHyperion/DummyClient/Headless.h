@@ -73,7 +73,7 @@ public:
             {
                 if (0xFFFFFFFF == m_SessIdx)
                 {
-                    m_SessIdx = Pack.GetSessionIdx();
+                    m_SessIdx = Pack.GetSessIdx();
 
                     unique_lock<mutex> Lock(m_ConVarLock);
                     m_ConVar.notify_all();

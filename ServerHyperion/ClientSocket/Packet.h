@@ -129,7 +129,7 @@ public:
 	inline const vector<bool>& GetHeader() { return m_Header; }
 
 	inline MsgType GetMsgType() const { return m_MsgType; }
-	inline UINT32 GetSessionIdx() const { return m_SessionIdx; }
+	inline UINT32 GetSessIdx() const { return m_SessionIdx; }
 	inline double GetPosX() const { return m_PosX; }
 	inline double GetPosY() const { return m_PosY; }
 	inline double GetPosZ() const { return m_PosZ; }

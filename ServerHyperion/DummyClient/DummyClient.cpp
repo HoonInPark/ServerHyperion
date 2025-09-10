@@ -14,7 +14,7 @@ int main()
     sampler.ReadFile();
 
     HeadlessManager mgr("127.0.0.1", 11021, &sampler);
-    mgr.Run(33);  // 클라이언트 100개 띄워서 테스트
+    mgr.Run(49);  // 클라이언트 100개 띄워서 테스트
 
     WSACleanup();
 }
