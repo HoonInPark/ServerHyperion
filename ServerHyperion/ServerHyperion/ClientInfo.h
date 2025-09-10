@@ -225,6 +225,7 @@ public:
 		if (!m_pSendDataPool->dequeue(pSendOvlpdEx))
 		{
 			printf("[SendMsg] : Error in Client %d\n", m_Index);
+			assert(false);
 			return false;
 		}
 
@@ -251,6 +252,7 @@ public:
 			else
 			{
 				printf("[SendMsg] : Error while dequeue from send buf q, data race is suspected");
+				assert(false);
 				return false;
 			}
 		}

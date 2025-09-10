@@ -164,7 +164,7 @@ private:
 			{
 			case MsgType::MSG_NONE:
 			{
-				assert(true);
+				assert(false);
 				break;
 			}
 			case MsgType::MSG_INIT:
@@ -223,11 +223,7 @@ private:
 				for (const auto& ConnCliInfo : m_SpawnedCliInfos)
 				{
 					//if (SESSION_STATUS::ST_SPAWNED != ConnCliInfo.second->GetStatus()) continue;
-					// TODO : this branch is gonna be deleted when server-authoritative model is implemented
-					if (pPack->GetSessIdx() != ConnCliInfo.first)
-					{
-						ConnCliInfo.second->SendMsg(Size, pStart);
-					}
+					ConnCliInfo.second->SendMsg(Size, pStart);
 				}
 
 				break;
@@ -244,7 +240,7 @@ private:
 			}
 			default:
 			{
-				assert(true);
+				assert(false);
 				break;
 			}
 			}

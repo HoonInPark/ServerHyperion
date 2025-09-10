@@ -260,7 +260,7 @@ private:
 				break;
 			}
 			default:
-				assert(true);
+				assert(false);
 				break;
 			}
 		}
