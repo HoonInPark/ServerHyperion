@@ -25,6 +25,9 @@ public:
 	{
 		delete m_pPackPool;
 		delete m_pPackQ;
+
+		delete m_pSafeErasePool;
+		delete m_pSafeEraseQ;
 	}
 
 	virtual void OnConnect(const UINT32 clientIndex_) override

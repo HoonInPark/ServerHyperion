@@ -185,7 +185,7 @@ private:
 		//WaingThread Queue에 대기 상태로 넣을 쓰레드들 생성 권장되는 개수 : (cpu개수 * 2) + 1 
 		for (int i = 0; i < MaxIOWorkerThreadCount; i++)
 		{
-			m_IOWorkerThreads.emplace_back([this]() { WokerThread(); });
+			m_IOWorkerThreads.emplace_back([this]() { IoWork(); });
 		}
 
 		printf("WokerThread 시작..\n");
@@ -193,7 +193,7 @@ private:
 	}
 
 	//Overlapped I/O작업에 대한 완료 통보를 받아 그에 해당하는 처리를 하는 함수
-	void WokerThread()
+	void IoWork()
 	{
 		//CompletionKey를 받을 포인터 변수
 		CliInfo* pCliInfo = nullptr;
