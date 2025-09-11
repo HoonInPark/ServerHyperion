@@ -93,6 +93,7 @@ public:
 		m_pPackSampler = make_unique<PacketSampler>();
 #endif
 
+		// TODO : U should wrap the StlCircularQueue class that has initializer with size input
 		m_pPackQ = new StlCircularQueue<Packet>(PUBLIC_PACK_POOL_SIZE);
 		m_pPackPool = new StlCircularQueue<Packet>(PUBLIC_PACK_POOL_SIZE);
 		for (int i = 0; i < PUBLIC_PACK_POOL_SIZE; ++i)
