@@ -221,6 +221,8 @@ public:
 	// obj pooling must be implemented
 	bool SendMsg(const UINT32 _InSize, char* _pInMsg)
 	{
+		ZoneScopedN("SendMsg(...)");
+
 		unique_ptr<OverlappedEx> pSendOvlpdEx;
 		if (!m_pSendDataPool->dequeue(pSendOvlpdEx))
 		{
@@ -262,6 +264,8 @@ public:
 
 	void SendCompleted(const UINT32 dataSize_)
 	{
+		ZoneScopedN("SendCompleted(...)");
+
 		//printf("[SendCompleted()] bytes : %d\n", dataSize_);
 
 		char MsgTypeInBuff = m_pInternOvlpdEx->m_wsaBuf.buf[static_cast<int>(Packet::Header::MAX)];
@@ -291,7 +295,6 @@ public:
 		}
 		case MsgType::MSG_SPAWN:
 		{
-
 			break;
 		}
 		case MsgType::MSG_GAME:
