@@ -122,7 +122,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Unreal\Projects\ServerHyperion\ServerHyperion\ClientSocket\x64;C:\Unreal\Projects\ServerHyperion\ServerHyperion\ClientSocket;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Unreal\Projects\ServerHyperion\ServerHyperion\ClientSocket\x64;C:\Unreal\Projects\ServerHyperion\ServerHyperion\ClientSocket;%(AdditionalIncludeDirectories);C:\Unreal\Libraries\tracy\public</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>

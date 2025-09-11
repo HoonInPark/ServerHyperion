@@ -1,5 +1,9 @@
 #pragma once
 
+#define TRACY_ENABLE
+#include "TracyClient.cpp"
+#include "tracy/Tracy.hpp"
+
 #pragma comment(lib, "ws2_32")
 #pragma comment(lib, "mswsock.lib")
 
@@ -263,6 +267,8 @@ private:
 				assert(false);
 				break;
 			}
+
+			FrameMarkNamed("IoLoop");
 		}
 	}
 

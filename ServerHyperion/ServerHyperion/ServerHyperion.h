@@ -3,7 +3,6 @@
 #include "ServerIOCP.h"
 #include "Packet.h"
 #include "PacketSampler.h"
-
 #include <vector>
 #include <thread>
 
@@ -11,7 +10,6 @@ using namespace std;
 
 #define PUBLIC_PACK_POOL_SIZE 2048
 #define GONNA_SAMPLE 0
-
 
 /// <summary>
 /// in ServerHyperion, we wrote game logics rather than low level network pocess...
@@ -257,6 +255,8 @@ private:
 			}
 
 			m_pPackPool->enqueue(pPack);
+
+			FrameMarkNamed("MainLoop");
 		}
 	}
 
