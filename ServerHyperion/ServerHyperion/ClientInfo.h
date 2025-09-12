@@ -229,16 +229,11 @@ public:
 			return false;
 		}
 
-		////////////////////////////////////////////////////////////////////////////////
 		/// write byte
-		////////////////////////////////////////////////////////////////////////////////
 		pSendOvlpdEx->Init();
 		pSendOvlpdEx->m_wsaBuf.len = _InSize;
 		CopyMemory(pSendOvlpdEx->m_wsaBuf.buf, _pInMsg, _InSize);
 		pSendOvlpdEx->m_eOperation = IOOperation::IO_SEND;
-		////////////////////////////////////////////////////////////////////////////////
-		////////////////////////////////////////////////////////////////////////////////
-		////////////////////////////////////////////////////////////////////////////////
 
 		m_pSendBufQ->enqueue(pSendOvlpdEx);
 		// If there are no messages currently in the process of being sent
@@ -307,7 +302,7 @@ public:
 
 		if (m_pSendBufQ->dequeue(m_pInternOvlpdEx))
 		{
-			m_pAtomicOvlpdEx.exchange(m_pInternOvlpdEx.get(), memory_order_acq_rel);
+			m_pAtomicOvlpdEx.exchange(m_pInternOvlpdEx.get(), memory_order_release);
 			SendIO(m_pInternOvlpdEx);
 		}
 		else

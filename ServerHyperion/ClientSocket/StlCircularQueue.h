@@ -59,18 +59,12 @@ public:
 
 			if (dif == 0)		// seq == pos
 			{
-				/*
-				* compare_exchange_weak 설명...
-				* 만약 enqueue_pos_의 값이 pos와 같으면 pos + 1로 값을 변경하고 true 반환.
-				* 반면 enqueue_pos_의 값이 pos와 다르면 곧바로 false 반환.
-				* 
-				*/
 				if (enqueue_pos_.compare_exchange_weak(pos, pos + 1, memory_order_relaxed))
 					break;
 			}
-			else if (dif < 0)	// seq < pos -> 이미 채워져 있고 dequeue를 기다리는 인덱스에 접근했을 때
+			else if (dif < 0)
 				return false;
-			else				// seq > pos -> 이미 누가 dequeue까지 끝나서 다음 라운드로 넘어갔거나
+			else
 				pos = enqueue_pos_.load(memory_order_relaxed);
 		}
 

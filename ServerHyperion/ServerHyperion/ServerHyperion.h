@@ -223,7 +223,6 @@ private:
 			{
 				for (const auto& ConnCliInfo : m_SpawnedCliInfos)
 				{
-					//if (SESSION_STATUS::ST_SPAWNED != ConnCliInfo.second->GetStatus()) continue;
 					ConnCliInfo.second->SendMsg(Size, pStart);
 				}
 
@@ -249,8 +248,7 @@ private:
 			unique_ptr<UINT32> pSafeEraseElem;
 			while (m_pSafeEraseQ->dequeue(pSafeEraseElem))
 			{
-				auto it = m_SpawnedCliInfos.find(*pSafeEraseElem);
-				if (it != m_SpawnedCliInfos.end())
+				if (m_SpawnedCliInfos.end() != m_SpawnedCliInfos.find(*pSafeEraseElem))
 					m_SpawnedCliInfos.erase(*pSafeEraseElem);
 
 				m_pSafeErasePool->enqueue(pSafeEraseElem);
