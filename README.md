@@ -15,9 +15,8 @@ https://velog.io/@hoonin_park/Hyperion-%EA%B2%8C%EC%9E%84-%EC%84%9C%EB%B2%84-%EA
 
 시연 영상
 ----
-https://www.youtube.com/watch?v=rS5ZZHxCeCg
+https://youtu.be/9jaTa1pwBnE
 
 ----
 
 - E-mail : hooninpark@gmail.com
-- Obsidian : https://github.com/HoonInPark/DevNote.git
