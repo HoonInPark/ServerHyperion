@@ -15,7 +15,7 @@ https://velog.io/@hoonin_park/Hyperion-%EA%B2%8C%EC%9E%84-%EC%84%9C%EB%B2%84-%EA
 
 시연 영상
 ----
-https://www.youtube.com/watch?v=rS5ZZHxCeCg
+https://www.youtube.com/watch?v=yIufqgi7jRw
 
 ----
 
