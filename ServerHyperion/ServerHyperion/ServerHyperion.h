@@ -71,6 +71,7 @@ public:
 		if (!m_pPackPool->dequeue(pPack))
 		{
 			printf("[OnReceive] : PackPool Error\n");
+			assert(false);
 			return;
 		}
 
