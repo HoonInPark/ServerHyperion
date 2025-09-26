@@ -99,12 +99,7 @@ public:
 		m_pPackPool = new StlObjectPool<Packet>(PUBLIC_PACK_POOL_SIZE);
 
 		m_pSafeEraseQ = new StlCircularQueue<UINT32>(maxClient);
-		m_pSafeErasePool = new StlCircularQueue<UINT32>(maxClient);
-		for (int i = 0; i < maxClient; ++i)
-		{
-			auto pSessIdx = make_unique<UINT32>(0);
-			m_pSafeErasePool->enqueue(pSessIdx);
-		}
+		m_pSafeErasePool = new StlObjectPool<UINT32>(maxClient);
 
 		m_bIsRunProcThread = true;
 		m_ProcThread = thread( // lambda bind here use onlu a thread

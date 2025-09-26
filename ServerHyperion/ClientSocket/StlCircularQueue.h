@@ -128,8 +128,8 @@ public:
 	StlObjectPool(size_t _InBufSize);
 	~StlObjectPool();
 
-	inline bool enqueue(unique_ptr<T>& _pInData) { return m_Data.enqueue(_pInData); }
-	inline bool dequeue(unique_ptr<T>& _pInData) { return m_Data.dequeue(_pInData); }
+	inline bool enqueue(unique_ptr<T>& _pInData) { return m_Data->enqueue(_pInData); }
+	inline bool dequeue(unique_ptr<T>& _pInData) { return m_Data->dequeue(_pInData); }
 
 private:
 	StlCircularQueue<T>* m_Data;

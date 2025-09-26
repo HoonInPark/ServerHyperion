@@ -31,13 +31,7 @@ public:
 		ZeroMemory(&m_RecvOvlpdEx, sizeof(OverlappedEx));
 		m_Socket = INVALID_SOCKET;
 
-		m_pSendDataPool = new StlCircularQueue<OverlappedEx>(CLI_PACK_POOL_SIZE);
-		for (int i = 0; i < CLI_PACK_POOL_SIZE; ++i)
-		{
-			auto pSendData = make_unique<OverlappedEx>();
-			m_pSendDataPool->enqueue(pSendData);
-		}
-
+		m_pSendDataPool = new StlObjectPool<OverlappedEx>(CLI_PACK_POOL_SIZE);
 		m_pSendBufQ = new StlCircularQueue<OverlappedEx>(CLI_PACK_POOL_SIZE);
 	}
 
@@ -383,5 +377,5 @@ private:
 	atomic<OverlappedEx*>&			m_pAtomicOvlpdEx;
 
 	StlCircularQueue<OverlappedEx>* m_pSendBufQ;
-	StlCircularQueue<OverlappedEx>* m_pSendDataPool;
+	StlObjectPool<OverlappedEx>*	m_pSendDataPool;
 };

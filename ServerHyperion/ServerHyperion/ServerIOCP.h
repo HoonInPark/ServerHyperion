@@ -336,13 +336,13 @@ protected:
 	bool		m_bIsAccepterRun{ true };
 
 protected:
-	UINT32 m_MaxCliCnt = 0;
-	atomic<OverlappedEx*>* m_SendBufArr;
+	UINT32							m_MaxCliCnt = 0;
+	atomic<OverlappedEx*>*			m_SendBufArr;
 
 	unordered_map<UINT32, CliInfo*> m_CliInfoPool;
 	unordered_map<UINT32, CliInfo*> m_SpawnedCliInfos;
 
-	StlCircularQueue<UINT32>* m_pSafeErasePool{ nullptr };
-	StlCircularQueue<UINT32>* m_pSafeEraseQ{ nullptr };
+	StlObjectPool<UINT32>*			m_pSafeErasePool{ nullptr };
+	StlCircularQueue<UINT32>*		m_pSafeEraseQ{ nullptr };
 
 };
