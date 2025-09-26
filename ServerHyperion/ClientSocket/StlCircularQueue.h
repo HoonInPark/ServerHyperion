@@ -89,7 +89,6 @@ public:
 		}
 
 		data = move(cell->data_);
-		cell->data_ = nullptr;
 		cell->sequence_.store(pos + buffer_mask_ + 1, memory_order_release);
 
 		return true;
@@ -128,26 +127,26 @@ public:
 	StlObjectPool(size_t _InBufSize);
 	~StlObjectPool();
 
-	inline bool enqueue(unique_ptr<T>& _pInData) { return m_Data->enqueue(_pInData); }
-	inline bool dequeue(unique_ptr<T>& _pInData) { return m_Data->dequeue(_pInData); }
+	inline bool enqueue(unique_ptr<T>& _pInData) { return m_pData->enqueue(_pInData); }
+	inline bool dequeue(unique_ptr<T>& _pInData) { return m_pData->dequeue(_pInData); }
 
 private:
-	StlCircularQueue<T>* m_Data;
+	StlCircularQueue<T>* m_pData;
 };
 
 template<typename T>
 StlObjectPool<T>::StlObjectPool(size_t _InBufSize)
 {
-	m_Data = new StlCircularQueue<T>(_InBufSize);
+	m_pData = new StlCircularQueue<T>(_InBufSize);
 	for (size_t i = 0; i < _InBufSize; ++i)
 	{
 		auto pElem = make_unique<T>();
-		m_Data->enqueue(pElem);
+		m_pData->enqueue(pElem);
 	}
 }
 
 template<typename T>
 StlObjectPool<T>::~StlObjectPool()
 {
-	delete m_Data;
+	delete m_pData;
 }
