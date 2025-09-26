@@ -23,15 +23,7 @@ public:
 	StlCircularQueue(size_t _InBufSize)
 		: buffer_mask_(bit_ceil(_InBufSize) - 1)
 	{
-		//assert((buffer_size >= 2) && ((buffer_size & (buffer_size - 1)) == 0));
 		size_t BitBufSize = bit_ceil(_InBufSize);
-
-		/*
-		buffer_.reserve(buffer_size);
-		for (size_t i = 0; i < buffer_size; ++i)
-			buffer_.emplace_back();
-		*/
-		
 		buffer_ = new cell_t[BitBufSize];
 
 		for (size_t i = 0; i != BitBufSize; i += 1)
@@ -111,10 +103,10 @@ private:
 	};
 
 	//vector<cell_t>			buffer_;
-	cell_t*					buffer_;
+	cell_t* buffer_;
 
 	const size_t            buffer_mask_;
-	
+
 	atomic<size_t>			enqueue_pos_;
 	atomic<size_t>			dequeue_pos_;
 
@@ -128,3 +120,34 @@ private:
 	StlCircularQueue(StlCircularQueue const&);
 	void operator = (StlCircularQueue const&);
 };
+
+template<typename T>
+class StlObjectPool
+{
+public:
+	StlObjectPool(size_t _InBufSize);
+	~StlObjectPool();
+
+	inline bool enqueue(unique_ptr<T>& _pInData) { return m_Data.enqueue(_pInData); }
+	inline bool dequeue(unique_ptr<T>& _pInData) { return m_Data.dequeue(_pInData); }
+
+private:
+	StlCircularQueue<T>* m_Data;
+};
+
+template<typename T>
+StlObjectPool<T>::StlObjectPool(size_t _InBufSize)
+{
+	m_Data = new StlCircularQueue<T>(_InBufSize);
+	for (size_t i = 0; i < _InBufSize; ++i)
+	{
+		auto pElem = make_unique<T>();
+		m_Data->enqueue(pElem);
+	}
+}
+
+template<typename T>
+StlObjectPool<T>::~StlObjectPool()
+{
+	delete m_Data;
+}

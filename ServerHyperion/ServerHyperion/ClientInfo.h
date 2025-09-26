@@ -103,6 +103,7 @@ public:
 
 	void Clear()
 	{
+		m_SendSpawnMsg = nullptr;
 		m_pInternOvlpdEx = nullptr;
 		m_pAtomicOvlpdEx.store(nullptr);
 

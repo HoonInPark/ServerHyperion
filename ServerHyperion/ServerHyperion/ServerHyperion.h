@@ -96,12 +96,7 @@ public:
 
 		// TODO : U should wrap the StlCircularQueue class that has initializer with size input
 		m_pPackQ = new StlCircularQueue<Packet>(PUBLIC_PACK_POOL_SIZE);
-		m_pPackPool = new StlCircularQueue<Packet>(PUBLIC_PACK_POOL_SIZE);
-		for (int i = 0; i < PUBLIC_PACK_POOL_SIZE; ++i)
-		{
-			auto pPacket = make_unique<Packet>();
-			m_pPackPool->enqueue(pPacket);
-		}
+		m_pPackPool = new StlObjectPool<Packet>(PUBLIC_PACK_POOL_SIZE);
 
 		m_pSafeEraseQ = new StlCircularQueue<UINT32>(maxClient);
 		m_pSafeErasePool = new StlCircularQueue<UINT32>(maxClient);
@@ -263,7 +258,7 @@ private:
 
 	thread						m_ProcThread;
 
-	StlCircularQueue<Packet>*	m_pPackPool{ nullptr };
+	StlObjectPool<Packet>*		m_pPackPool{ nullptr };
 	StlCircularQueue<Packet>*	m_pPackQ{ nullptr };
 
 #if _DEBUG && GONNA_SAMPLE
