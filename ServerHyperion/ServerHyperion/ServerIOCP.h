@@ -202,7 +202,7 @@ private:
 		//Overlapped I/O작업에서 전송된 데이터 크기
 		DWORD dwIoSize = 0;
 		//I/O 작업을 위해 요청한 Overlapped 구조체를 받을 포인터
-		LPOVERLAPPED lpOverlapped = NULL;
+		LPOVERLAPPED lpOvlpd = NULL;
 
 		while (m_bIsWorkerRun)
 		{
@@ -210,36 +210,36 @@ private:
 				m_IOCPHandle,
 				&dwIoSize,					// 실제로 전송된 바이트
 				(PULONG_PTR)&pCliInfo,		// CompletionKey
-				&lpOverlapped,				// Overlapped IO 객체
+				&lpOvlpd,					// Overlapped IO 객체
 				INFINITE);					// 대기할 시간
 
 			//사용자 쓰레드 종료 메세지 처리..
-			if (TRUE == bSuccess && 0 == dwIoSize && NULL == lpOverlapped)
+			if (TRUE == bSuccess && 0 == dwIoSize && NULL == lpOvlpd)
 			{
 				m_bIsWorkerRun = false;
 				continue;
 			}
 
-			if (NULL == lpOverlapped)
+			if (NULL == lpOvlpd)
 			{
 				continue;
 			}
 
-			auto pOverlappedEx = (OverlappedEx*)lpOverlapped;
+			auto pOvlpdEx = (OverlappedEx*)lpOvlpd;
 
 			//client가 접속을 끊었을때..
-			if (FALSE == bSuccess || (0 == dwIoSize && IOOperation::IO_ACCEPT != pOverlappedEx->m_eOperation))
+			if (FALSE == bSuccess || (0 == dwIoSize && IOOperation::IO_ACCEPT != pOvlpdEx->m_eOperation))
 			{
 				//printf("socket(%d) 접속 끊김\n", (int)pClientInfo->m_socketClient);
 				CloseSocket(pCliInfo);
 				continue;
 			}
 
-			switch (pOverlappedEx->m_eOperation)
+			switch (pOvlpdEx->m_eOperation)
 			{
 			case IOOperation::IO_ACCEPT:
 			{
-				pCliInfo = GetCliInfoFromPool(pOverlappedEx->SessionIndex);
+				pCliInfo = GetCliInfoFromPool(pOvlpdEx->SessionIndex);
 
 				if (pCliInfo->AcceptCompletion())
 					OnConnect(pCliInfo->GetIndex());
