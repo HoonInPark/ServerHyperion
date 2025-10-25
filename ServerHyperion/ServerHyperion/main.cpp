@@ -17,7 +17,12 @@ const UINT32 MAX_IO_WORKER_THREAD = 4;  //쓰레드 풀에 넣을 쓰레드 수
 
 int main()
 {
-    Aws::GameLift::Server::InitSDK();
+    auto InitOutcome = InitSDK();
+    if (!InitOutcome.IsSuccess())
+    {
+        cout << "[InitSDK()] : " << InitOutcome.GetError().GetErrorMessage() << endl;
+        return -1;
+    }
 
     ProcessParameters HyperionProcParams
     (
@@ -39,10 +44,16 @@ int main()
         {
             return true; // true면 정상, false면 GameLift가 서버를 종료시킴
         },
-        7777,
-        // 인증 토큰 (멀티프로세스에서 사용 가능)
+        SERVER_PORT,
         LogParameters()
     );
+
+    auto ReadyOutcome = ProcessReady(HyperionProcParams);
+    if (!ReadyOutcome.IsSuccess())
+    {
+        cout << "[ProcessReady(...)] : " << ReadyOutcome.GetError().GetErrorMessage() << endl;
+        return -1;
+    }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
     ServerHyperion server;
@@ -69,4 +80,8 @@ int main()
 
     server.End();
     ///////////////////////////////////////////////////////////////////////////////////////////////
+
+    Destroy();
+
+    return 0;
 }
