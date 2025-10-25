@@ -17,6 +17,33 @@ const UINT32 MAX_IO_WORKER_THREAD = 4;  //쓰레드 풀에 넣을 쓰레드 수
 
 int main()
 {
+    Aws::GameLift::Server::InitSDK();
+
+    ProcessParameters HyperionProcParams
+    (
+        // 게임 세션 생성 시 호출됨
+        [](Model::GameSession gameSession)
+        {
+            cout << "Game session created: " << gameSession.GetGameSessionId() << endl;
+            ActivateGameSession();
+        },
+        // 게임 세션 종료 요청 시 호출됨
+        []()
+        {
+            cout << "Game session ending..." << endl;
+            //TerminateGameSession(); // it makes compilation error. is it version problem?
+            ProcessEnding();
+        },
+        // HealthCheck 콜백
+        []() -> bool
+        {
+            return true; // true면 정상, false면 GameLift가 서버를 종료시킴
+        },
+        7777,
+        // 인증 토큰 (멀티프로세스에서 사용 가능)
+        LogParameters()
+    );
+
     ///////////////////////////////////////////////////////////////////////////////////////////////
     ServerHyperion server;
 
