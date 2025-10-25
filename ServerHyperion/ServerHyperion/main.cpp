@@ -58,12 +58,8 @@ int main()
     ///////////////////////////////////////////////////////////////////////////////////////////////
     ServerHyperion server;
 
-    //소켓을 초기화
     server.Init(MAX_IO_WORKER_THREAD);
-
-    //소켓과 서버 주소를 연결하고 등록 시킨다.
     server.BindandListen(SERVER_PORT);
-
     server.Run(MAX_CLIENT);
 
     printf("아무 키나 누를 때까지 대기합니다\n");
