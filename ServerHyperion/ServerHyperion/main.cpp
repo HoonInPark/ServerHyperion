@@ -2,6 +2,7 @@
 //
 
 #define GAMELIFT_USE_STD
+#define LOCALHOST 1
 
 #include <iostream>
 #include <string>
@@ -15,9 +16,30 @@ const UINT16 SERVER_PORT = 11021;
 const UINT16 MAX_CLIENT = 100;		//총 접속할수 있는 클라이언트 수
 const UINT32 MAX_IO_WORKER_THREAD = 4;  //쓰레드 풀에 넣을 쓰레드 수
 
+const string GetEnv(const string&);
+
 int main()
 {
-    auto InitOutcome = InitSDK();
+#if LOCALHOST
+    // const std::string& websocketUrl, 
+    // const std::string& authToken, 
+    // const std::string& fleetId, 
+    // const std::string& hostId, 
+    // const std::string& processId
+    
+    Model::ServerParameters HyperionServerParams
+    (
+        GetEnv("AWS_WEBSOCK_URL"),
+        GetEnv("AWS_AUTH_TOKEN"),
+        GetEnv("AWS_FLEET_ID"),
+        GetEnv("AWS_HOST_ID"),
+        "ServerHyperion"
+    );
+#elif
+    Model::ServerParameters HyperionServerParams;
+#endif
+
+    auto InitOutcome = InitSDK(HyperionServerParams);
     if (!InitOutcome.IsSuccess())
     {
         cout << "[InitSDK()] : " << InitOutcome.GetError().GetErrorMessage() << endl;
@@ -80,4 +102,20 @@ int main()
     Destroy();
 
     return 0;
+}
+
+const string GetEnv(const string& _InStr)
+{
+    char* Val = nullptr;
+    size_t Len = 0;
+
+    string ResStr;
+
+    if (0 == _dupenv_s(&Val, &Len, _InStr.c_str()) && nullptr != Val)
+    {
+        ResStr = Val;
+        free(Val);
+    }
+
+    return ResStr;
 }
