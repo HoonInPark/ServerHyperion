@@ -30,7 +30,7 @@ int main()
     Model::ServerParameters HyperionServerParams
     (
         GetEnv("AWS_WEBSOCK_URL"),
-        GetEnv("AWS_AUTH_TOKEN"),
+        GetEnv("AWS_AUTH_TOKEN"), // TODO : AWS_AUTH_TOKEN must be updated automatically when it needed.
         GetEnv("AWS_FLEET_ID"),
         GetEnv("AWS_HOST_ID"),
         "ServerHyperion"
